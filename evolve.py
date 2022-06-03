@@ -13,6 +13,7 @@ import neat
 import visualize
 
 runs_per_net = 100
+stats_location = 'stats'
 
 # Use the NN network phenotype and the discrete actuator force function.
 def eval_genome(genome, config):
@@ -71,13 +72,13 @@ def run():
     winner = pop.run(pe.evaluate, n=5000)
 
     # Save the winner.
-    with open('stats/winner-feedforward', 'wb') as f:
+    with open(f"{stats_location}/winner-feedforward", 'wb') as f:
         pickle.dump(winner, f)
 
     print(winner)
 
-    visualize.plot_stats(stats, ylog=True, view=True, filename="stats/feedforward-fitness.svg")
-    #visualize.plot_species(stats, view=True, filename="feedforward-speciation.svg")
+    visualize.plot_stats(stats, ylog=True, view=True, filename=f"{stats_location}/feedforward-fitness.svg")
+    #visualize.plot_species(stats, view=True, filename=f"{stats_location}/feedforward-speciation.svg")
 
     node_names = {-1: 'easy1', -2: 'easy2', -3: 'easy3', 
         -4: 'easy4', -5: 'easy5', -6: 'easy6', 
@@ -87,9 +88,9 @@ def run():
     visualize.draw_net(config, winner, True, node_names=node_names)
 
     visualize.draw_net(config, winner, view=True, node_names=node_names,
-                       filename="stats/winner-feedforward.gv")
+                       filename=f"{stats_location}/winner-feedforward.gv")
     visualize.draw_net(config, winner, view=True, node_names=node_names,
-                       filename="stats/winner-feedforward-enabled-pruned.gv", prune_unused=True)
+                       filename=f"{stats_location}/winner-feedforward-enabled-pruned.gv", prune_unused=True)
 
 
 if __name__ == '__main__':
