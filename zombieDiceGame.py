@@ -1,7 +1,8 @@
 import random
 from enum import IntEnum
-
 from numpy import roll
+
+from zombieDicePlayers import *
 
 class ZombieDiceType(IntEnum):
     none = 0
@@ -41,16 +42,16 @@ class ZombieDiceHard(ZombieDice):
         super().__init__()
         self.brains = 1
         self.steps = 2
-        self.explosions = 3
+        self.explosions = 3                
 
-class ZombieDiceGame(object):
-    def __init__(self, number_dice_easy=6, number_dice_moderate=4, number_dice_hard=3):
-        self.game_active = True
+class ZombieDiceTurn(object):
+    def __init__(self, player, **kwargs):
         self.dice_to_roll = 3
-        self.dice = ([ZombieDiceEasy() for _ in range(number_dice_easy)] + 
-            [ZombieDiceModerate() for _ in range(number_dice_moderate)] + 
-            [ZombieDiceHard() for _ in range(number_dice_hard)])
-        self.limit_explosions = 3
+        self.player = player
+        self.dice = ([ZombieDiceEasy() for _ in range(kwargs["number_dice_easy"])] + 
+            [ZombieDiceModerate() for _ in range(kwargs["number_dice_moderate"])] + 
+            [ZombieDiceHard() for _ in range(kwargs["number_dice_hard"])])
+        self.limit_explosions = kwargs["limit_explosions"]
 
     def roll(self, return_neural_form = True):
         """
@@ -114,24 +115,78 @@ class ZombieDiceGame(object):
         else:
             return 0
 
+class ZombieDiceGame(object):
+    def __init__(self, players, number_dice_easy=6, number_dice_moderate=4, 
+        number_dice_hard=3, limit_explosions=3, limit_brains=13):
+        self.players = players
+        self.turn_arguments = {"number_dice_easy":number_dice_easy,
+            "number_dice_moderate":number_dice_moderate,
+            "number_dice_hard":number_dice_hard,
+            "limit_explosions":limit_explosions}
+        self.limit_brains = limit_brains
+
+        #Relative to current game
+        self.game_active = True
+        self.number_turns = 0
+        self.countdown = None
+
+    def play(self):
+        index = 0
+        while self.game_active:
+            if index % len(self.players) == 0:
+                self.number_turns += 1
+            active_player = self.players[index]
+            index = (index + 1) % len(self.players)
+            turn = ZombieDiceTurn(active_player, **self.turn_arguments)
+            reroll = True
+            while reroll:
+                inputs = turn.get_stale_state()
+                reroll = active_player.play(inputs)
+                if reroll:
+                    turn.roll()
+                if turn.turn_ended():
+                    reroll = False
+            active_player.give_brains(turn.get_points())
+            self.game_active = self.validate_game()
+        winners = [player for player in self.players if player.get_brains() == max([p.get_brains() for p in self.players])]
+        losers = [player for player in self.players if player.get_brains() != max([p.get_brains() for p in self.players])]
+        for winner in winners:
+            if len(winners) >= 2:
+                winner.register_draw()
+            else:
+                winner.register_win()
+        for loser in losers:
+            loser.register_loss()
+        return winners
+
+    def validate_game(self):
+        game_validated = True
+        brains = [player.get_brains() for player in self.players]
+        if any([b >= self.limit_brains for b in brains]):
+            if self.countdown is None:
+                self.countdown = len(self.players)-1
+            else:
+                self.countdown -= 1
+            if self.countdown == 0:
+                game_validated = False
+        return game_validated
+
+    def reset(self):
+        self.game_active = True
+        self.number_turns = 0
+        self.countdown = None
+
 if __name__ == "__main__":
-    easy = ZombieDiceEasy()
-    print("easy:")
-    for _ in range(5):
-       print(easy.roll())
+    number_games = 5000    
 
-    moderate = ZombieDiceModerate()
-    print("moderate:")
-    for _ in range(5):
-        print(moderate.roll())
-
-    hard = ZombieDiceHard()
-    print("hard:")
-    for _ in range(5):
-        print(hard.roll())
-
-    game = ZombieDiceGame()
-    print("game:")
-    for _ in range(5):
-        print(game.roll())
-        print(f"{game.get_points()} points")
+    players1 = [GreedyZombie('Greedy'), SafeZombie('Safe'), GreedyZombie('Greedy'), SafeZombie('Safe')]
+    players2 = [SafeZombie('Safe'), GreedyZombie('Greedy'), GreedyZombie('Greedy'), SafeZombie('Safe')]
+    for player1, player2 in zip(players1, players2):
+        players = [player1, player2]
+        game = ZombieDiceGame(players)
+        for _ in range(number_games):
+            for player in players:
+                player.reset()
+            game.play()
+            game.reset()
+        print(f"Greedy:{player1.get_winrate()} ; Safe:{player2.get_winrate()}")
