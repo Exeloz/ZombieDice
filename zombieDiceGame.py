@@ -179,8 +179,8 @@ class ZombieDiceGame(object):
 if __name__ == "__main__":
     number_games = 5000    
 
-    players1 = [GreedyZombie('Greedy'), SafeZombie('Safe'), GreedyZombie('Greedy'), SafeZombie('Safe')]
-    players2 = [SafeZombie('Safe'), GreedyZombie('Greedy'), GreedyZombie('Greedy'), SafeZombie('Safe')]
+    players1 = [GreedyZombie('Greedy'), SafeZombie('Safe'), IntelligentZombie('AI', 'stats/best_player_feedforward_1', 'config-feedforward'), IntelligentZombie('AI', 'stats/best_player_feedforward_1', 'config-feedforward'), IntelligentZombie('AI', 'stats/best_player_feedforward_1', 'config-feedforward')]
+    players2 = [IntelligentZombie('AI', 'stats/best_player_feedforward_1', 'config-feedforward'), IntelligentZombie('AI', 'stats/best_player_feedforward_1', 'config-feedforward'), GreedyZombie('Greedy'), SafeZombie('Safe'), IntelligentZombie('AI', 'stats/best_player_feedforward_1', 'config-feedforward')]
     for player1, player2 in zip(players1, players2):
         players = [player1, player2]
         game = ZombieDiceGame(players)
@@ -189,4 +189,4 @@ if __name__ == "__main__":
                 player.reset()
             game.play()
             game.reset()
-        print(f"Greedy:{player1.get_winrate()} ; Safe:{player2.get_winrate()}")
+        print(f"{str(player1)}:{player1.get_winrate()}({player1.get_wins()}) ; {str(player2)}:{player2.get_winrate()}({player2.get_wins()})")

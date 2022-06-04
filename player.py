@@ -36,5 +36,10 @@ class Player:
     def reset(self):
         pass
 
+    def reset_wins(self):
+        self.wins = 0
+        self.losses = 0
+        self.draws = 0
+
     def __str__(self) -> str:
         return str(self.name)
