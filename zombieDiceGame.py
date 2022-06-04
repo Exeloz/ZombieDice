@@ -2,6 +2,7 @@ import random
 from enum import IntEnum
 from numpy import roll
 
+from game import Game, Turn
 from zombieDicePlayers import *
 
 class ZombieDiceType(IntEnum):
@@ -44,16 +45,16 @@ class ZombieDiceHard(ZombieDice):
         self.steps = 2
         self.explosions = 3                
 
-class ZombieDiceTurn(object):
+class ZombieDiceTurn(Turn):
     def __init__(self, player, **kwargs):
+        super().__init__(player)
         self.dice_to_roll = 3
-        self.player = player
         self.dice = ([ZombieDiceEasy() for _ in range(kwargs["number_dice_easy"])] + 
             [ZombieDiceModerate() for _ in range(kwargs["number_dice_moderate"])] + 
             [ZombieDiceHard() for _ in range(kwargs["number_dice_hard"])])
         self.limit_explosions = kwargs["limit_explosions"]
 
-    def roll(self, return_neural_form = True):
+    def play(self, return_neural_form = True):
         """
         Rolls new dice according to specification. If all dice are said not to
         roll, the turn is over. 
@@ -115,20 +116,15 @@ class ZombieDiceTurn(object):
         else:
             return 0
 
-class ZombieDiceGame(object):
+class ZombieDiceGame(Game):
     def __init__(self, players, number_dice_easy=6, number_dice_moderate=4, 
         number_dice_hard=3, limit_explosions=3, limit_brains=13):
-        self.players = players
+        super().__init__(players)
         self.turn_arguments = {"number_dice_easy":number_dice_easy,
             "number_dice_moderate":number_dice_moderate,
             "number_dice_hard":number_dice_hard,
             "limit_explosions":limit_explosions}
         self.limit_brains = limit_brains
-
-        #Relative to current game
-        self.game_active = True
-        self.number_turns = 0
-        self.countdown = None
 
     def play(self):
         index = 0
@@ -143,7 +139,7 @@ class ZombieDiceGame(object):
                 inputs = turn.get_stale_state()
                 reroll = active_player.play(inputs)
                 if reroll:
-                    turn.roll()
+                    turn.play()
                 if turn.turn_ended():
                     reroll = False
             active_player.give_brains(turn.get_points())
@@ -172,9 +168,7 @@ class ZombieDiceGame(object):
         return game_validated
 
     def reset(self):
-        self.game_active = True
-        self.number_turns = 0
-        self.countdown = None
+        super().reset()
 
 if __name__ == "__main__":
     number_games = 5000    
