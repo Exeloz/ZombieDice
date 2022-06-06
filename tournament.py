@@ -11,7 +11,7 @@ class TieBreaker(IntEnum):
     earliest_win = 3
 
 class Bracket:
-    def __init__(self, players, number_games, gameClass=Game, tiebreaker='keep_playing'):
+    def __init__(self, players, number_games, gameClass=Game, tiebreaker=TieBreaker.keep_playing):
         self.players = players
         self.gameClass = gameClass
         self.number_games = number_games
@@ -20,13 +20,10 @@ class Bracket:
         self.history = []
 
     def play(self):
-        game = self.gameClass(self.players)
+        self.game = self.gameClass(self.players)
         for _ in range(self.number_games):
-            winners = self.play_single_game(game)
+            winners = self.play_single_game(self.game)
             self.history.append(tuple([str(winner) for winner in winners]))
-            self.shuffle_players()
-        while(len(self.get_winners()) >= 2):
-            self.play_single_game(game)
             self.shuffle_players()
         return self.get_winners()
 
@@ -37,11 +34,39 @@ class Bracket:
         game.reset()
         return winners
 
+    def break_tie(self, players):
+        if self.tiebreaker == TieBreaker.keep_playing:
+            return self.__tiebreaker_keep_playing__()
+        elif self.tiebreaker == TieBreaker.check_draws:
+            return self.__tiebreaker_check_draws__(players)
+        elif self.tiebreaker == TieBreaker.earliest_win:
+            return self.__tiebreaker_earliest_win__(players)
+        else:
+            raise NotImplemented
+
+    def __tiebreaker_keep_playing__(self):
+        self.play_single_game(self.game)
+        self.shuffle_players()
+        return self.get_winners()
+
+    def __tiebreaker_check_draws__(self, players):
+        draws = [(player, player.get_draws()) for player in players]
+        winner = max(draws, key=lambda d : d[1])[0]
+        return [winner]
+
+    def __tiebreaker_earliest_win__(self, players):
+        for past_winner in self.history:
+            for player in players:
+                if len(past_winner) == 1 and past_winner[0] == str(player):
+                    return [player]
+
     def shuffle_players(self):
         shuffle(self.players)
 
     def get_winners(self):
         winners = [player for player in self.players if player.get_wins() == max([p.get_wins() for p in self.players])]
+        while len(winners) >= 2:
+            winners = self.break_tie(winners)
         return winners
 
 class Tournament:
@@ -52,9 +77,10 @@ class Tournament:
         self.tiebreaker = tiebreaker
 
 if __name__ == "__main__":
-    number_games = 1000    
+    number_games = 12000    
     players = [GreedyZombie(str(i)) for i in range(3)]
     bracket = Bracket(players, number_games, ZombieDiceGame)
     winner = bracket.play()[0]
-    print(f"{str(winner)}:{winner.get_winrate()}({winner.get_wins()};{winner.get_draws()};{winner.get_losses()})")
+    print('\n'.join([f"{str(player)}:{player.get_winrate()}({player.get_wins()};{player.get_draws()};{player.get_losses()})"
+        for player in players]))
     print(bracket.history)
