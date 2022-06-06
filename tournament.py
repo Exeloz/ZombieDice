@@ -23,7 +23,7 @@ class Bracket:
         self.game = self.gameClass(self.players)
         for _ in range(self.number_games):
             winners = self.play_single_game(self.game)
-            self.history.append(tuple([str(winner) for winner in winners]))
+            self.__register_game__(winners)
             self.shuffle_players()
         return self.get_winners()
 
@@ -44,8 +44,18 @@ class Bracket:
         else:
             raise NotImplemented
 
+    def shuffle_players(self):
+        shuffle(self.players)
+
+    def get_winners(self):
+        winners = [player for player in self.players if player.get_wins() == max([p.get_wins() for p in self.players])]
+        while len(winners) >= 2:
+            winners = self.break_tie(winners)
+        return winners
+
     def __tiebreaker_keep_playing__(self):
-        self.play_single_game(self.game)
+        winners = self.play_single_game(self.game)
+        self.__register_game__(winners)
         self.shuffle_players()
         return self.get_winners()
 
@@ -60,14 +70,8 @@ class Bracket:
                 if len(past_winner) == 1 and past_winner[0] == str(player):
                     return [player]
 
-    def shuffle_players(self):
-        shuffle(self.players)
-
-    def get_winners(self):
-        winners = [player for player in self.players if player.get_wins() == max([p.get_wins() for p in self.players])]
-        while len(winners) >= 2:
-            winners = self.break_tie(winners)
-        return winners
+    def __register_game__(self, winners):
+        self.history.append(tuple([str(winner) for winner in winners]))
 
 class Tournament:
     def __init__(self, players, size_bracket, number_games, tiebreaker='keep_playing') -> None:
@@ -77,10 +81,11 @@ class Tournament:
         self.tiebreaker = tiebreaker
 
 if __name__ == "__main__":
-    number_games = 12000    
+    number_games = 5000
     players = [GreedyZombie(str(i)) for i in range(3)]
     bracket = Bracket(players, number_games, ZombieDiceGame)
     winner = bracket.play()[0]
     print('\n'.join([f"{str(player)}:{player.get_winrate()}({player.get_wins()};{player.get_draws()};{player.get_losses()})"
         for player in players]))
+    print(winner)
     print(bracket.history)
