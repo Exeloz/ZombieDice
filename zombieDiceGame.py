@@ -170,10 +170,20 @@ class ZombieDiceGame(Game):
     def reset(self):
         super().reset()
 
-if __name__ == "__main__":
-    number_games = 5000    
+def progress_bar(current, total, bar_length=40):
+    fraction = current / total
 
-    players1 = [GreedyZombie('Greedy'), SafeZombie('Safe'), IntelligentZombie('AI', 'stats/best_player_feedforward_1', 'config-feedforward'), IntelligentZombie('AI', 'stats/best_player_feedforward_1', 'config-feedforward'), IntelligentZombie('AI', 'stats/best_player_feedforward_1', 'config-feedforward')]
+    arrow = int(fraction * bar_length - 1) * '-' + '>'
+    padding = int(bar_length - len(arrow)) * ' '
+
+    ending = '\n' if current == total else '\r'
+
+    print(f'Progress: [{arrow}{padding}] {int(fraction*100)}%', end=ending)
+
+if __name__ == "__main__":
+    number_games = 100000    
+
+    '''players1 = [GreedyZombie('Greedy'), SafeZombie('Safe'), IntelligentZombie('AI', 'stats/best_player_feedforward_1', 'config-feedforward'), IntelligentZombie('AI', 'stats/best_player_feedforward_1', 'config-feedforward'), IntelligentZombie('AI', 'stats/best_player_feedforward_1', 'config-feedforward')]
     players2 = [IntelligentZombie('AI', 'stats/best_player_feedforward_1', 'config-feedforward'), IntelligentZombie('AI', 'stats/best_player_feedforward_1', 'config-feedforward'), GreedyZombie('Greedy'), SafeZombie('Safe'), IntelligentZombie('AI', 'stats/best_player_feedforward_1', 'config-feedforward')]
     for player1, player2 in zip(players1, players2):
         players = [player1, player2]
@@ -183,4 +193,16 @@ if __name__ == "__main__":
                 player.reset()
             game.play()
             game.reset()
-        print(f"{str(player1)}:{player1.get_winrate()}({player1.get_wins()}) ; {str(player2)}:{player2.get_winrate()}({player2.get_wins()})")
+        print(f"{str(player1)}:{player1.get_winrate()}({player1.get_wins()}) ;
+        {str(player2)}:{player2.get_winrate()}({player2.get_wins()})")
+    '''
+    for n in range(2, 11):
+        print(f"{n} players:\n")
+        players = [GreedyZombie(str(i)) for i in range(n)]
+        game = ZombieDiceGame(players)
+        for _ in range(number_games):
+            for player in players:
+                player.reset()
+            game.play()
+            game.reset()
+        print('\n'.join([f"{str(player)}:{player.get_winrate()}({player.get_wins()};{player.get_draws()};{player.get_losses()})" for player in players]))
