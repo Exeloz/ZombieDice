@@ -1,4 +1,4 @@
-from player import Player
+from player import Player, RandomPlayer
 from zombieDiceGame import ZombieDiceType
 import pickle
 import neat
@@ -53,3 +53,7 @@ class IntelligentZombie(Zombie):
             reroll = bool(round(min(1, max(0, action))))
             return reroll
         super().__init__(name, decision_function)
+
+class RandomZombie(RandomPlayer, Zombie):
+    def __init__(self, name, seed=None):
+        super().__init__(name, seed)

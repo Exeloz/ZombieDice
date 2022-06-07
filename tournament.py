@@ -1,8 +1,11 @@
+import math
+
 from game import Game, Turn
 from random import shuffle
 from enum import IntEnum
 
-from zombieDicePlayers import GreedyZombie
+from player import Player, RandomPlayer
+from zombieDicePlayers import SafeZombie, GreedyZombie, IntelligentZombie, RandomZombie
 from zombieDiceGame import ZombieDiceGame
 
 class TieBreaker(IntEnum):
@@ -74,18 +77,47 @@ class Bracket:
         self.history.append(tuple([str(winner) for winner in winners]))
 
 class Tournament:
-    def __init__(self, players, size_bracket, number_games, tiebreaker='keep_playing') -> None:
+    def __init__(self, players, size_bracket, number_games, gameClass=Game, 
+        randomPlayerClass=RandomPlayer, tiebreaker='keep_playing') -> None:
+
+        #Players related
         self.players = players
+        self.randomPlayerClass = randomPlayerClass
+
+        #Game related
         self.size_bracket = size_bracket
         self.number_games = number_games
+        self.gameClass = gameClass
         self.tiebreaker = tiebreaker
+
+        #Tournament related
+        self.contestants = []
+
+    def preleminary_selection(self, number_prep_games=100):
+        number_contestants = int(math.pow(self.size_bracket, 
+            math.floor(math.log(len(self.players), self.size_bracket))))
+        results = []
+        for index, player in enumerate(self.players):
+            players = [player] + [self.randomPlayerClass(f'random{i}') for i in range(self.size_bracket-1)]
+            bracket = Bracket(players, number_prep_games, self.gameClass)
+            bracket.play()
+            results.append((index, player.get_wins()))
+        results.sort(key=lambda d : d[1])
+        results = results[:number_contestants]
+        results.reverse()
+        print(results)
+        self.contestants = [self.players[index] for index, _ in results]
+        return self.contestants
 
 if __name__ == "__main__":
     number_games = 5000
-    players = [GreedyZombie(str(i)) for i in range(3)]
-    bracket = Bracket(players, number_games, ZombieDiceGame)
-    winner = bracket.play()[0]
+    players = ([RandomZombie('MyRandom' + str(i), seed=i) for i in range(300)] + 
+        [GreedyZombie('Greedy'), SafeZombie('Safe'), IntelligentZombie('AI', 'stats/best_player_feedforward_1', 'config-feedforward')])
+    tournament = Tournament(players, 4, number_games, ZombieDiceGame, RandomZombie)
+    print(tournament.preleminary_selection())
+    
+    '''winner = bracket.play()[0]
     print('\n'.join([f"{str(player)}:{player.get_winrate()}({player.get_wins()};{player.get_draws()};{player.get_losses()})"
         for player in players]))
     print(winner)
-    print(bracket.history)
+    print(bracket.history)'''

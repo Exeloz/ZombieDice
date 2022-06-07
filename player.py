@@ -1,3 +1,5 @@
+import random
+
 class Player:
     def __init__(self, name, decision_function = None):
         self.decision_function = decision_function
@@ -5,6 +7,8 @@ class Player:
         self.wins = 0
         self.losses = 0
         self.draws = 0
+
+        self.tournament_position = 0
 
     def play(self, inputs):
         return self.decision_function(inputs)
@@ -33,6 +37,15 @@ class Player:
     def get_lossrate(self):
         return self.losses/(self.wins+self.losses)
 
+    def set_tournament_position(self, position):
+        self.tournament_position = position
+
+    def increment_tournament_position(self):
+        self.tournament_position += 1
+
+    def get_tournament_position(self):
+        return self.tournament_position
+
     def reset(self):
         pass
 
@@ -43,3 +56,14 @@ class Player:
 
     def __str__(self) -> str:
         return str(self.name)
+
+    def __repr__(self) -> str:
+        return str(self.name)
+
+class RandomPlayer(Player):
+    '''A player that plays randomly'''
+    def __init__(self, name, seed=None):
+        random.seed(seed)
+        def decision_function(inputs):
+            return random.randint(0, 1)
+        super().__init__(name, decision_function)
