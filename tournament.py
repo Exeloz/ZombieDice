@@ -1,5 +1,7 @@
 import math
 
+from nbformat import current_nbformat
+
 from game import Game, Turn
 from random import shuffle
 from enum import IntEnum
@@ -109,15 +111,34 @@ class Tournament:
         self.contestants = [self.players[index] for index, _ in results]
         return self.contestants
 
+    def play(self):
+        assert(len(self.contestants)%self.size_bracket==0)
+        shuffle(self.contestants)
+        while(len(self.contestants) > 1):
+            current_winners = []
+            for contestant in self.contestants:
+                contestant.reset_wins()
+                contestant.increment_tournament_position()
+            for index, player in enumerate(self.contestants):
+                if (index+1)%self.size_bracket==0:
+                    players = self.contestants[index-self.size_bracket+1:index+1]
+                    bracket = Bracket(players, self.number_games, self.gameClass)
+                    winners = bracket.play()
+                    assert(len(winners) == 1)
+                    current_winners.append(winners[0])
+            self.contestants = current_winners
+        self.contestants[0].increment_tournament_position()
+        return self.contestants
+
+
 if __name__ == "__main__":
-    number_games = 5000
+    number_games = 100
     players = ([RandomZombie('MyRandom' + str(i), seed=i) for i in range(300)] + 
-        [GreedyZombie('Greedy'), SafeZombie('Safe'), IntelligentZombie('AI', 'stats/best_player_feedforward_1', 'config-feedforward')])
+        [GreedyZombie('Greedy' + str(i)) for i in range(300)] + 
+        [SafeZombie('Safe' + str(i)) for i in range(300)] + 
+        [IntelligentZombie('AI'+ str(i), 'stats/best_player_feedforward_1', 'config-feedforward') for i in range(300)])
     tournament = Tournament(players, 4, number_games, ZombieDiceGame, RandomZombie)
-    print(tournament.preleminary_selection())
-    
-    '''winner = bracket.play()[0]
-    print('\n'.join([f"{str(player)}:{player.get_winrate()}({player.get_wins()};{player.get_draws()};{player.get_losses()})"
-        for player in players]))
-    print(winner)
-    print(bracket.history)'''
+    tournament.preleminary_selection()
+    w = tournament.play()
+    print(w)
+    print('\n'.join([f"{str(player)}:{player.get_tournament_position()}" for player in players]))
