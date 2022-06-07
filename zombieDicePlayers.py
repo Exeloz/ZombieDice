@@ -37,6 +37,19 @@ class SafeZombie(Zombie):
             return n_brains < min
         super().__init__(name, decision_function)
 
+class StudentZombie(Zombie):
+    '''A player that is learning.... scary!!'''
+    def __init__(self, name, genome, config):
+        
+        self.net = neat.nn.FeedForwardNetwork.create(genome, config)
+        self.genome = genome
+
+        def decision_function(inputs):
+            action = self.net.activate(inputs)[0]
+            reroll = bool(round(min(1, max(0, action))))
+            return reroll
+        super().__init__(name, decision_function)
+
 class IntelligentZombie(Zombie):
     '''A player governed by an AI!'''
     def __init__(self, name, player_path, config_path):

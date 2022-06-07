@@ -104,9 +104,8 @@ class Tournament:
             bracket = Bracket(players, number_prep_games, self.gameClass)
             bracket.play()
             results.append((index, player.get_wins()))
-        results.sort(key=lambda d : d[1])
+        results.sort(key=lambda d : -d[1])
         results = results[:number_contestants]
-        results.reverse()
         print(results)
         self.contestants = [self.players[index] for index, _ in results]
         return self.contestants

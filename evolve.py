@@ -1,58 +1,29 @@
-"""
-Single-pole balancing experiment using a feed-forward neural network.
-"""
-
 import multiprocessing
 import os
 import pickle
 import math
 import numpy as np
-
-import zombieDiceGame
 import neat
 import visualize
 
-runs_per_net = 100
+from zombieDicePlayers import StudentZombie, RandomZombie
+from zombieDiceGame import ZombieDiceGame
+from tournament import Tournament
+
+number_games = 1000
 stats_location = 'stats'
 
-# Use the NN network phenotype and the discrete actuator force function.
-def eval_genome(genome, config):
-    net = neat.nn.FeedForwardNetwork.create(genome, config)
-
-    fitnesses = []
-
-    for runs in range(runs_per_net):
-        game = zombieDiceGame.ZombieDiceGame()
-
-        # Run the given simulation for up to num_steps time steps.
-        fitness = 0.0
-        reroll = True
-        while reroll:
-            inputs = game.get_stale_state()
-            action = net.activate(inputs)[0]
-
-            # Do we reroll?
-            reroll = bool(round(min(1, max(0, action))))
-            if reroll: 
-                game.roll()
-
-            # Stop if the to many explosions occured of if all dice are used and
-            # no rerolls can be achieved
-            if game.turn_ended():
-                reroll = False
-
-            fitness = game.get_points()
-
-        fitnesses.append(fitness)
-
-    # The genome's fitness is its average performance across all runs.
-    return np.average(fitnesses)
-
+def eval_genome(zombie):
+    return zombie.get_tournament_position()
 
 def eval_genomes(genomes, config):
-    for genome_id, genome in genomes:
-        genome.fitness = eval_genome(genome, config)
-
+    zombies = [StudentZombie(f'Student-{genome_id}', genome, config) 
+                    for genome_id, genome in genomes]
+    tournament = Tournament(zombies, 4, number_games, ZombieDiceGame, RandomZombie)
+    tournament.preleminary_selection()
+    w = tournament.play()
+    for zombie in zombies:
+        zombie.genome.fitness = eval_genome(zombie)
 
 def run():
     # Load the config file, which is assumed to live in
@@ -63,13 +34,15 @@ def run():
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_path)
 
-    pop = neat.Population(config)
-    stats = neat.StatisticsReporter()
-    pop.add_reporter(stats)
-    pop.add_reporter(neat.StdOutReporter(True))
+    # Create the population, which is the top-level object for a NEAT run.
+    p = neat.Population(config)
 
-    pe = neat.ParallelEvaluator(multiprocessing.cpu_count(), eval_genome)
-    winner = pop.run(pe.evaluate, n=5000)
+    # Add a stdout reporter to show progress in the terminal.
+    p.add_reporter(neat.StdOutReporter(True))
+    stats = neat.StatisticsReporter()
+    p.add_reporter(stats)
+    p.add_reporter(neat.Checkpointer(5))
+    winner = p.run(eval_genomes, 1000)
 
     # Save the winner.
     with open(f"{stats_location}/winner-feedforward", 'wb') as f:
@@ -91,7 +64,6 @@ def run():
                        filename=f"{stats_location}/winner-feedforward.gv")
     visualize.draw_net(config, winner, view=True, node_names=node_names,
                        filename=f"{stats_location}/winner-feedforward-enabled-pruned.gv", prune_unused=True)
-
 
 if __name__ == '__main__':
     run()
