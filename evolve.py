@@ -5,31 +5,72 @@ import math
 import numpy as np
 import neat
 import visualize
+from pathlib import Path
 
-from zombieDicePlayers import StudentZombie, RandomZombie
+from zombieDicePlayers import GreedyZombie, StudentZombie, RandomZombie
 from zombieDiceGame import ZombieDiceGame
 from tournament import Tournament
 
 number_games = 1000
+number_gens = 100
 stats_location = 'stats'
+genome_locations = 'checkpoints'
+current_gen = 0
 
-def eval_genome(zombie):
-    return zombie.get_tournament_position()
+def eval_genome(zombie, previous_winner_fitness):
+    return max(0, zombie.get_tournament_position() - previous_winner_fitness)
 
 def eval_genomes(genomes, config):
-    zombies = [StudentZombie(f'Student-{genome_id}', genome, config) 
+    previous_best_id = find_best_genome(genomes)
+    zombies = [StudentZombie(create_zombie_name(genome_id), genome, config) 
                     for genome_id, genome in genomes]
     tournament = Tournament(zombies, 4, number_games, ZombieDiceGame, RandomZombie)
     tournament.preleminary_selection()
-    w = tournament.play()
+    winners = tournament.play()
+
+    if previous_best_id is None:
+        previous_winner_fitness = 0
+    else:
+        previous_winner_fitness = find_zombie(zombies, previous_best_id).get_tournament_position()
+    
     for zombie in zombies:
-        zombie.genome.fitness = eval_genome(zombie)
+        zombie.genome.fitness = eval_genome(zombie, previous_winner_fitness)
+
+    checkpoint(genomes)
+    return winners
+
+def create_zombie_name(genome_id):
+    return f'Student-{genome_id}'
+
+def find_zombie(zombies, genome_id):
+    for zombie in zombies:
+        if str(zombie) == create_zombie_name(genome_id):
+            return zombie 
+
+def find_best_genome(genomes):
+    genomes_light = [(g_id, g.fitness) for g_id, g in genomes if g.fitness is not None]
+    if len(genomes_light) == 0:
+        return None
+    max_id = max(genomes_light, key=lambda g: g[1])[0]
+    for genome_id, _ in genomes:
+        if genome_id == max_id:
+            return genome_id
+
+def checkpoint(genomes):
+    global current_gen
+    directory_path = Path(f"{genome_locations}/gen{current_gen}")
+    for genome_id, genome in genomes:
+        path = Path.joinpath(directory_path, str(genome_id))
+        directory_path.mkdir(parents=True, exist_ok=True)
+        with open(path, 'wb') as f:
+            pickle.dump(genome, f)
+    current_gen += 1
 
 def run():
     # Load the config file, which is assumed to live in
     # the same directory as this script.
     local_dir = os.path.dirname(__file__)
-    config_path = os.path.join(local_dir, 'config-feedforward')
+    config_path = os.path.join(local_dir, 'config')
     config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
                          neat.DefaultSpeciesSet, neat.DefaultStagnation,
                          config_path)
@@ -41,8 +82,8 @@ def run():
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    p.add_reporter(neat.Checkpointer(5))
-    winner = p.run(eval_genomes, 1000)
+    p.add_reporter(neat.Checkpointer(1, filename_prefix=Path(f"{genome_locations}/neat/neat-checkpoint")))
+    winner = p.run(eval_genomes, number_gens)
 
     # Save the winner.
     with open(f"{stats_location}/winner-feedforward", 'wb') as f:

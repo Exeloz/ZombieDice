@@ -125,6 +125,7 @@ class ZombieDiceGame(Game):
             "number_dice_hard":number_dice_hard,
             "limit_explosions":limit_explosions}
         self.limit_brains = limit_brains
+        self.limit_turns = 25
 
     def play(self):
         index = 0
@@ -156,7 +157,7 @@ class ZombieDiceGame(Game):
         return winners
 
     def validate_game(self):
-        game_validated = True
+        game_validated = self.number_turns < self.limit_turns
         brains = [player.get_brains() for player in self.players]
         if any([b >= self.limit_brains for b in brains]):
             if self.countdown is None:

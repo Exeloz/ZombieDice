@@ -3,7 +3,7 @@ import math
 from nbformat import current_nbformat
 
 from game import Game, Turn
-from random import shuffle
+from random import shuffle, choice
 from enum import IntEnum
 
 from player import Player, RandomPlayer
@@ -11,6 +11,7 @@ from zombieDicePlayers import SafeZombie, GreedyZombie, IntelligentZombie, Rando
 from zombieDiceGame import ZombieDiceGame
 
 class TieBreaker(IntEnum):
+    random = 0
     keep_playing = 1
     check_draws = 2
     earliest_win = 3
@@ -23,6 +24,7 @@ class Bracket:
         self.tiebreaker = tiebreaker
 
         self.history = []
+        self.break_tie_calls = 0
 
     def play(self):
         self.game = self.gameClass(self.players)
@@ -40,14 +42,18 @@ class Bracket:
         return winners
 
     def break_tie(self, players):
-        if self.tiebreaker == TieBreaker.keep_playing:
-            return self.__tiebreaker_keep_playing__()
-        elif self.tiebreaker == TieBreaker.check_draws:
-            return self.__tiebreaker_check_draws__(players)
-        elif self.tiebreaker == TieBreaker.earliest_win:
-            return self.__tiebreaker_earliest_win__(players)
+        self.break_tie_calls += 1
+        if self.break_tie_calls < 5:
+            if self.tiebreaker == TieBreaker.keep_playing:
+                return self.__tiebreaker_keep_playing__()
+            elif self.tiebreaker == TieBreaker.check_draws:
+                return self.__tiebreaker_check_draws__(players)
+            elif self.tiebreaker == TieBreaker.earliest_win:
+                return self.__tiebreaker_earliest_win__(players)
+            else:
+                raise NotImplemented
         else:
-            raise NotImplemented
+            return self.__tiebreaker_random__(players)
 
     def shuffle_players(self):
         shuffle(self.players)
@@ -74,6 +80,9 @@ class Bracket:
             for player in players:
                 if len(past_winner) == 1 and past_winner[0] == str(player):
                     return [player]
+
+    def __tiebreaker_random__(self, players):
+        return [choice(players)]
 
     def __register_game__(self, winners):
         self.history.append(tuple([str(winner) for winner in winners]))
@@ -106,8 +115,8 @@ class Tournament:
             results.append((index, player.get_wins()))
         results.sort(key=lambda d : -d[1])
         results = results[:number_contestants]
-        print(results)
         self.contestants = [self.players[index] for index, _ in results]
+        print([(p,p.get_wins()) for p in self.contestants])
         return self.contestants
 
     def play(self):
@@ -135,7 +144,8 @@ if __name__ == "__main__":
     players = ([RandomZombie('MyRandom' + str(i), seed=i) for i in range(300)] + 
         [GreedyZombie('Greedy' + str(i)) for i in range(300)] + 
         [SafeZombie('Safe' + str(i)) for i in range(300)] + 
-        [IntelligentZombie('AI'+ str(i), 'stats/best_player_feedforward_1', 'config-feedforward') for i in range(300)])
+        [IntelligentZombie('OldAI'+ str(i), 'stats/best_player_feedforward_1', 'config-feedforward') for i in range(300)] + 
+        [IntelligentZombie('AI'+ str(i), 'stats/winner-feedforward', 'config-feedforward') for i in range(300)])
     tournament = Tournament(players, 4, number_games, ZombieDiceGame, RandomZombie)
     tournament.preleminary_selection()
     w = tournament.play()
