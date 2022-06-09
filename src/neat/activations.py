@@ -1,5 +1,6 @@
 import math
 
+
 def sigmoid_activation_multiple_integers(z):
     if z < 0:
         return 0

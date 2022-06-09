@@ -1,8 +1,10 @@
+import os
+import pickle
+
+import neat
 from src.base.player import Player, RandomPlayer
 from src.zombie.zombieDiceGame import ZombieDiceType
-import pickle
-import neat
-import os
+
 
 class Zombie(Player):
     def __init__(self, name, decision_function):

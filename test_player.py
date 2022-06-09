@@ -1,9 +1,11 @@
-import pickle
 import os
+import pickle
+
 import numpy as np
 from matplotlib import pyplot as plt
-import src.zombie.zombieDiceGame
+
 import neat
+import src.zombie.zombieDiceGame
 
 # load the winner
 player_filename = "best_player_1"

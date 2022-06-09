@@ -1,14 +1,15 @@
 import math
+from enum import IntEnum
+from random import choice, shuffle
 
 from nbformat import current_nbformat
 
 from src.base.game import Game, Turn
-from random import shuffle, choice
-from enum import IntEnum
-
 from src.base.player import Player, RandomPlayer
-from src.zombie.zombieDicePlayers import SafeZombie, GreedyZombie, IntelligentZombie, RandomZombie
 from src.zombie.zombieDiceGame import ZombieDiceGame
+from src.zombie.zombieDicePlayers import (GreedyZombie, IntelligentZombie,
+                                          RandomZombie, SafeZombie)
+
 
 class TieBreaker(IntEnum):
     random = 0

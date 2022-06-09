@@ -1,15 +1,17 @@
+import math
 import multiprocessing
 import os
 import pickle
-import math
-import numpy as np
-import neat
-import src.neat.visualize as visualize
 from pathlib import Path
 
-from src.zombie.zombieDicePlayers import GreedyZombie, StudentZombie, RandomZombie
-from src.zombie.zombieDiceGame import ZombieDiceGame
+import numpy as np
+
+import neat
+import src.neat.visualize as visualize
 from src.base.tournament import Tournament
+from src.zombie.zombieDiceGame import ZombieDiceGame
+from src.zombie.zombieDicePlayers import (GreedyZombie, RandomZombie,
+                                          StudentZombie)
 
 number_games = 1000
 number_gens = 100

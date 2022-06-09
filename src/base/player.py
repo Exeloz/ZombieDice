@@ -1,5 +1,6 @@
 import random
 
+
 class Player:
     def __init__(self, name, decision_function = None):
         self.decision_function = decision_function
