@@ -2,7 +2,7 @@ import pickle
 import os
 import numpy as np
 from matplotlib import pyplot as plt
-import zombieDiceGame
+import src.zombie.zombieDiceGame
 import neat
 
 # load the winner

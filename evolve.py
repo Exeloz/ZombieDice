@@ -4,12 +4,12 @@ import pickle
 import math
 import numpy as np
 import neat
-import visualize
+import src.neat.visualize as visualize
 from pathlib import Path
 
-from zombieDicePlayers import GreedyZombie, StudentZombie, RandomZombie
-from zombieDiceGame import ZombieDiceGame
-from tournament import Tournament
+from src.zombie.zombieDicePlayers import GreedyZombie, StudentZombie, RandomZombie
+from src.zombie.zombieDiceGame import ZombieDiceGame
+from src.base.tournament import Tournament
 
 number_games = 1000
 number_gens = 100

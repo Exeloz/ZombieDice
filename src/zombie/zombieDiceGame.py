@@ -2,8 +2,8 @@ import random
 from enum import IntEnum
 from numpy import roll
 
-from game import Game, Turn
-from zombieDicePlayers import *
+from src.base.game import Game, Turn
+from src.zombie.zombieDicePlayers import *
 
 class ZombieDiceType(IntEnum):
     none = 0

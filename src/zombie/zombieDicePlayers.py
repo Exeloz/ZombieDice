@@ -1,5 +1,5 @@
-from player import Player, RandomPlayer
-from zombieDiceGame import ZombieDiceType
+from src.base.player import Player, RandomPlayer
+from src.zombie.zombieDiceGame import ZombieDiceType
 import pickle
 import neat
 import os
