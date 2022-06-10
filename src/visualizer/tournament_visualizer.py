@@ -64,8 +64,8 @@ class App:
 
     def render(self):
         self.window.fill(0)
-        self.test.blit()
-        pygame.display.update([self.test.sprite_rect, self.test.previous_rect])
+        self.test.draw()
+        pygame.display.update([self.test.rect, self.test.previous_rect])
 
     def on_execute(self):
         while self.running == True:
@@ -77,39 +77,37 @@ class App:
 class TournamentPlayer:
     def __init__(self, screen, image_filename, origin_x, origin_y) -> None:
         self.screen = screen
-        self.sprite = pygame.image.load(image_filename).convert_alpha()
-        self.sprite_rect = self.sprite.get_rect(center = self.screen.get_rect().center)
+        self.color = (48, 141, 70)
+        self.rect = pygame.Rect(30, 30, 60, 60)
         self.x = origin_x
         self.y = origin_y
 
-        self.blit()
         self.__update_previous__()
         self.__update_sides__()
 
-    def blit(self):
-        self.sprite_surface = pygame.transform.smoothscale(self.sprite, self.sprite_rect.size)
+    def draw(self):
+        pygame.draw.rect(self.screen, self.color, self.rect,  2,  border_bottom_right_radius=5)
         self.__update_sides__()
-        self.screen.blit(self.sprite_surface, self.sprite_rect)
 
     def move_offset(self, offset_x, offset_y):
         self.__update_previous__()
-        self.sprite_rect.x += offset_x
-        self.sprite_rect.y += offset_y
+        self.rect.x += offset_x
+        self.rect.y += offset_y
         self.__update_sides__()
 
     def move(self, left, top, width, height):
         self.__update_previous__()
-        self.sprite_rect = pygame.Rect(left, top, width, height)
+        self.rect = pygame.Rect(left, top, width, height)
         self.__update_sides__()
 
     def __update_previous__(self):
-        self.previous_rect = self.sprite_rect.copy()
+        self.previous_rect = self.rect.copy()
 
     def __update_sides__(self):
-        self.left = self.sprite_rect.left
-        self.right = self.sprite_rect.right
-        self.top = self.sprite_rect.top
-        self.bottom = self.sprite_rect.bottom
+        self.left = self.rect.left
+        self.right = self.rect.right
+        self.top = self.rect.top
+        self.bottom = self.rect.bottom
 
 start = App()
 start.on_execute()
