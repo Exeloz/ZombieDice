@@ -85,12 +85,13 @@ class TournamentPlayer:
         self.y = origin_y
         self.primary_width = 175
         self.seconday_width = 25
-        self.width_ratio = self.primary_width/self.seconday_width
-        self.height = 45
+        self.primary_ratio = self.primary_width/(self.primary_width+self.seconday_width)
+        self.secondary_ratio = self.seconday_width/(self.primary_width+self.seconday_width)
+        height = 45
 
         # Rectangles
-        self.primary_rect = pygame.Rect(origin_x+self.seconday_width, origin_y, self.primary_width, self.height)
-        self.secondary_rect = pygame.Rect(origin_x, origin_y, self.seconday_width, self.height)
+        self.primary_rect = pygame.Rect(origin_x+self.seconday_width, origin_y, self.primary_width, height)
+        self.secondary_rect = pygame.Rect(origin_x, origin_y, self.seconday_width, height)
 
         # Colors
         self.primary_color = (88,89,94,255)
@@ -98,7 +99,7 @@ class TournamentPlayer:
         self.separator_color = (68,69,73,255)
 
         self.__update_previous__()
-        self.__update_sides__()
+        self.__update_sides__(origin_x, origin_y, (self.primary_width+self.seconday_width), height)
 
     def draw(self):
         border_radius = 5
@@ -109,10 +110,9 @@ class TournamentPlayer:
             border_top_left_radius=border_radius, border_bottom_left_radius=border_radius)
 
         pygame.draw.aaline(self.screen, self.separator_color, 
-            (self.left+(self.right-self.left)*(1/self.width_ratio), self.bottom), 
-            (self.left+(self.right-self.left)*(1/self.width_ratio), self.top))
+            (self.left+(self.right-self.left)*self.secondary_ratio, self.bottom), 
+            (self.left+(self.right-self.left)*self.secondary_ratio, self.top))
 
-        self.__update_sides__()
         return [self.primary_rect, self.secondary_rect, self.previous_primary_rect, self.previous_secondary_rect]
 
     def move_offset(self, offset_x, offset_y):
@@ -121,23 +121,24 @@ class TournamentPlayer:
         self.primary_rect.y += offset_y
         self.secondary_rect.x += offset_x
         self.secondary_rect.y += offset_y
-        self.__update_sides__()
+        self.__update_sides__(self.left+offset_x, self.top+offset_y, 
+            self.right-self.left, self.bottom-self.top)
 
     def move(self, left, top, width, height):
         self.__update_previous__()
-        self.primary_rect = pygame.Rect(left+width*(1/self.width_ratio), top, width*(1-(1/self.width_ratio)), height)
-        self.secondary_rect = pygame.Rect(left, top, width*(1/self.width_ratio), height)
-        self.__update_sides__()
+        self.__update_sides__(left, top, width, height)
+        self.primary_rect = pygame.Rect(left+width*self.secondary_ratio, top, width*self.primary_ratio, height)
+        self.secondary_rect = pygame.Rect(left, top, width*self.secondary_ratio, height)
 
     def __update_previous__(self):
         self.previous_primary_rect = self.primary_rect.copy()
         self.previous_secondary_rect = self.secondary_rect.copy()
 
-    def __update_sides__(self):
-        self.left = self.secondary_rect.left
-        self.right = self.primary_rect.right
-        self.top = self.secondary_rect.top
-        self.bottom = self.secondary_rect.bottom
+    def __update_sides__(self, left, top, width, height):
+        self.left = left
+        self.right = left+width
+        self.top = top
+        self.bottom = top+height
 
 start = App()
 start.on_execute()
