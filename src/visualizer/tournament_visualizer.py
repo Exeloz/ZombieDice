@@ -8,6 +8,7 @@ class App:
         self.size = (800,600)
 
         #create window
+        self.background_color = (36,44,52)
         self.window = pygame.display.set_mode(self.size, pygame.DOUBLEBUF | pygame.HWSURFACE | pygame.RESIZABLE)
         
         # Drawing Sprite
@@ -19,6 +20,7 @@ class App:
         self.lastY = None
 
         #create window
+        self.window.fill(self.background_color)
         pygame.display.flip()
 
     def on_cleanup(self):
@@ -63,9 +65,9 @@ class App:
             self.lastX, self.lastY = event.pos
 
     def render(self):
-        self.window.fill(0)
-        self.test.draw()
-        pygame.display.update([self.test.rect, self.test.previous_rect])
+        self.window.fill(self.background_color)
+        rectangles = self.test.draw()
+        pygame.display.update(rectangles)
 
     def on_execute(self):
         while self.running == True:
@@ -77,37 +79,65 @@ class App:
 class TournamentPlayer:
     def __init__(self, screen, image_filename, origin_x, origin_y) -> None:
         self.screen = screen
-        self.color = (48, 141, 70)
-        self.rect = pygame.Rect(30, 30, 60, 60)
+
+        # Dimension and position
         self.x = origin_x
         self.y = origin_y
+        self.primary_width = 175
+        self.seconday_width = 25
+        self.width_ratio = self.primary_width/self.seconday_width
+        self.height = 45
+
+        # Rectangles
+        self.primary_rect = pygame.Rect(origin_x+self.seconday_width, origin_y, self.primary_width, self.height)
+        self.secondary_rect = pygame.Rect(origin_x, origin_y, self.seconday_width, self.height)
+
+        # Colors
+        self.primary_color = (88,89,94,255)
+        self.secondary_color = (120,122,128,255)
+        self.separator_color = (68,69,73,255)
 
         self.__update_previous__()
         self.__update_sides__()
 
     def draw(self):
-        pygame.draw.rect(self.screen, self.color, self.rect,  2,  border_bottom_right_radius=5)
+        border_radius = 5
+        pygame.draw.rect(self.screen, self.primary_color, self.primary_rect,  width=0,
+            border_top_right_radius=border_radius, border_bottom_right_radius=border_radius)
+
+        pygame.draw.rect(self.screen, self.secondary_color, self.secondary_rect,  width=0,  
+            border_top_left_radius=border_radius, border_bottom_left_radius=border_radius)
+
+        pygame.draw.aaline(self.screen, self.separator_color, 
+            (self.left+(self.right-self.left)*(1/self.width_ratio), self.bottom), 
+            (self.left+(self.right-self.left)*(1/self.width_ratio), self.top))
+
         self.__update_sides__()
+        return [self.primary_rect, self.secondary_rect, self.previous_primary_rect, self.previous_secondary_rect]
 
     def move_offset(self, offset_x, offset_y):
         self.__update_previous__()
-        self.rect.x += offset_x
-        self.rect.y += offset_y
+        self.primary_rect.x += offset_x
+        self.primary_rect.y += offset_y
+        self.secondary_rect.x += offset_x
+        self.secondary_rect.y += offset_y
         self.__update_sides__()
 
     def move(self, left, top, width, height):
         self.__update_previous__()
-        self.rect = pygame.Rect(left, top, width, height)
+        self.primary_rect = pygame.Rect(left+width*(1/self.width_ratio), top, width*(1-(1/self.width_ratio)), height)
+        self.secondary_rect = pygame.Rect(left, top, width*(1/self.width_ratio), height)
         self.__update_sides__()
 
     def __update_previous__(self):
-        self.previous_rect = self.rect.copy()
+        self.previous_primary_rect = self.primary_rect.copy()
+        self.previous_secondary_rect = self.secondary_rect.copy()
 
     def __update_sides__(self):
-        self.left = self.rect.left
-        self.right = self.rect.right
-        self.top = self.rect.top
-        self.bottom = self.rect.bottom
+        self.left = self.secondary_rect.left
+        self.right = self.primary_rect.right
+        self.top = self.secondary_rect.top
+        self.bottom = self.secondary_rect.bottom
 
 start = App()
 start.on_execute()
