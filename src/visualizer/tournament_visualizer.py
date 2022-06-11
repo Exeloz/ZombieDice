@@ -98,6 +98,10 @@ class TournamentPlayer:
         self.secondary_color = (120,122,128,255)
         self.separator_color = (68,69,73,255)
 
+        # Drawings
+        self.epsilon = 2 # Otherwise, rounding errors causes rectangle to not be updated correctly
+        self.line_threshold = 20 # If height is smaller than this, we don't draw the line
+
         self.__update_previous__()
         self.__update_sides__(origin_x, origin_y, (self.primary_width+self.seconday_width), height)
 
@@ -109,9 +113,10 @@ class TournamentPlayer:
         pygame.draw.rect(self.screen, self.secondary_color, self.secondary_rect,  width=0,  
             border_top_left_radius=border_radius, border_bottom_left_radius=border_radius)
 
-        pygame.draw.aaline(self.screen, self.separator_color, 
-            (self.left+(self.right-self.left)*self.secondary_ratio, self.bottom), 
-            (self.left+(self.right-self.left)*self.secondary_ratio, self.top))
+        if self.bottom-self.top >= self.line_threshold:
+            pygame.draw.aaline(self.screen, self.separator_color, 
+                (self.left+(self.right-self.left)*self.secondary_ratio, self.bottom-self.epsilon), 
+                (self.left+(self.right-self.left)*self.secondary_ratio, self.top+self.epsilon))
 
         return [self.primary_rect, self.secondary_rect, self.previous_primary_rect, self.previous_secondary_rect]
 
