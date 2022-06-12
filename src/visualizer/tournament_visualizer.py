@@ -2,7 +2,7 @@ import pygame
 from pygame.locals import *
 import os
 
-class App:
+class TournamentVisualizer:
     def __init__(self):
         self.running = True
         self.size = (800,600)
@@ -12,7 +12,7 @@ class App:
         self.window = pygame.display.set_mode(self.size, pygame.DOUBLEBUF | pygame.HWSURFACE | pygame.RESIZABLE)
         
         # Drawing Sprite
-        self.test = TournamentPlayer(self.window, 'src/visualizer/nyan.gif', 200, 200)
+        self.player = PlayerVisualizer(self.window, 200, 200)
 
         # dragging
         self.dragging = False
@@ -40,11 +40,11 @@ class App:
             if event.button == 4 or event.button == 5:
                 zoom = 1.05 if event.button == 4 else 0.95
                 mx, my = event.pos
-                left   = mx + (self.test.left - mx) * zoom
-                right  = mx + (self.test.right - mx) * zoom
-                top    = my + (self.test.top - my) * zoom
-                bottom = my + (self.test.bottom - my) * zoom
-                self.test.move(left, top, right-left, bottom-top)
+                left   = mx + (self.player.left - mx) * zoom
+                right  = mx + (self.player.right - mx) * zoom
+                top    = my + (self.player.top - my) * zoom
+                bottom = my + (self.player.bottom - my) * zoom
+                self.player.move(left, top, right-left, bottom-top)
 
             if event.button == pygame.BUTTON_LEFT:  
                 self.dragging = True     
@@ -57,16 +57,16 @@ class App:
             mouse_x, mouse_y = event.pos
             offset_x = self.lastX - mouse_x
             offset_y = self.lastY - mouse_y
-            left   = self.test.left - offset_x
-            right  = self.test.right - offset_x
-            top    = self.test.top - offset_y
-            bottom = self.test.bottom - offset_y
-            self.test.move_offset(-offset_x, -offset_y)
+            left   = self.player.left - offset_x
+            right  = self.player.right - offset_x
+            top    = self.player.top - offset_y
+            bottom = self.player.bottom - offset_y
+            self.player.move_offset(-offset_x, -offset_y)
             self.lastX, self.lastY = event.pos
 
     def render(self):
         self.window.fill(self.background_color)
-        rectangles = self.test.draw()
+        rectangles = self.player.draw()
         pygame.display.update(rectangles)
 
     def on_execute(self):
@@ -76,8 +76,8 @@ class App:
             self.render()
         self.on_cleanup()
     
-class TournamentPlayer:
-    def __init__(self, screen, image_filename, origin_x, origin_y) -> None:
+class PlayerVisualizer:
+    def __init__(self, screen, origin_x, origin_y) -> None:
         self.screen = screen
 
         # Dimension and position
@@ -145,5 +145,5 @@ class TournamentPlayer:
         self.top = top
         self.bottom = top+height
 
-start = App()
+start = TournamentVisualizer()
 start.on_execute()
