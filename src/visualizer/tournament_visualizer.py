@@ -1,6 +1,34 @@
+from numpy import number
 import pygame
 from pygame.locals import *
-import os
+import math
+
+class Grid:
+    def __init__(self, screen, size, number_cells) -> None:
+        self.screen = screen
+        self.width, self.height = size
+        self.number_h_cells, self.number_v_cells = number_cells
+        self.epsilon = 2
+
+        self.cell_width = math.ceil(self.width/self.number_h_cells)
+        self.cell_height = math.ceil(self.width/self.number_v_cells)
+
+        self.cells = {}
+        for h in range(self.number_h_cells):
+            for v in range(self.number_v_cells):
+                self.cells[(h,v)] = pygame.Rect(self.cell_width*h-self.epsilon, 
+                                                self.cell_height*v-self.epsilon,
+                                                self.cell_width+2*self.epsilon,
+                                                self.cell_height+2*self.epsilon)
+
+    def intersects(self, rects):
+        intersection = []
+        for cell in self.cells.values():
+            if cell.collidelist(rects) != -1:
+                intersection.append(cell)
+                #color = (int((cell.x/1000)*255), int((cell.y/1000)*255), ((cell.x*cell.y/1000)*255))
+                #pygame.draw.rect(self.screen, color, cell,  width=0)
+        return intersection
 
 class TournamentVisualizer:
     def __init__(self):
@@ -13,6 +41,7 @@ class TournamentVisualizer:
         
         # Drawing Sprite
         self.player = PlayerVisualizer(self.window, 200, 200)
+        self.grid = Grid(self.window, self.size, (8, 8))
 
         # dragging
         self.dragging = False
@@ -67,7 +96,8 @@ class TournamentVisualizer:
     def render(self):
         self.window.fill(self.background_color)
         rectangles = self.player.draw()
-        pygame.display.update(rectangles)
+        grid_cells = self.grid.intersects(rectangles)
+        pygame.display.update(grid_cells)
 
     def on_execute(self):
         while self.running == True:
