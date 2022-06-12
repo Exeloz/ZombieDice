@@ -26,7 +26,7 @@ class Grid:
         for cell in self.cells.values():
             if cell.collidelist(rects) != -1:
                 intersection.append(cell)
-                #color = (int((cell.x/1000)*255), int((cell.y/1000)*255), ((cell.x*cell.y/1000)*255))
+                #color = (int((cell.x/1000)*255), int((cell.y/1000)*255), ((cell.x*cell.y/1000)*255)%255)
                 #pygame.draw.rect(self.screen, color, cell,  width=0)
         return intersection
 
@@ -41,7 +41,7 @@ class TournamentVisualizer:
         
         # Drawing Sprite
         self.player = PlayerVisualizer(self.window, 200, 200)
-        self.grid = Grid(self.window, self.size, (8, 8))
+        self.grid = Grid(self.window, self.size, (255, 255))
 
         # dragging
         self.dragging = False
