@@ -1,5 +1,6 @@
 from numpy import number
 import pygame
+import pygame.freetype
 from pygame.locals import *
 import math
 
@@ -32,6 +33,10 @@ class Grid:
 
 class TournamentVisualizer:
     def __init__(self):
+
+        # Initilization
+        pygame.font.init()
+        pygame.freetype.init()
         self.running = True
         self.size = (800,600)
 
@@ -40,8 +45,9 @@ class TournamentVisualizer:
         self.window = pygame.display.set_mode(self.size, pygame.DOUBLEBUF | pygame.HWSURFACE | pygame.RESIZABLE)
         
         # Drawing Sprite
-        self.player = PlayerVisualizer(self.window, 200, 200)
-        self.grid = Grid(self.window, self.size, (255, 255))
+        self.player = PlayerVisualizer(self.window, 200, 200, id=1, name='Student-1', 
+                                        font = pygame.freetype.Font('src/visualizer/Philosopher.ttf'))
+        self.grid = Grid(self.window, self.size, (8, 8))
 
         # dragging
         self.dragging = False
@@ -107,7 +113,7 @@ class TournamentVisualizer:
         self.on_cleanup()
     
 class PlayerVisualizer:
-    def __init__(self, screen, origin_x, origin_y) -> None:
+    def __init__(self, screen, origin_x, origin_y, id, name, font) -> None:
         self.screen = screen
 
         # Dimension and position
@@ -128,6 +134,11 @@ class PlayerVisualizer:
         self.secondary_color = (120,122,128,255)
         self.separator_color = (68,69,73,255)
 
+        # Writings
+        self.font = font
+        self.id = str(id)
+        self.name = str(name)
+        
         # Drawings
         self.epsilon = 2 # Otherwise, rounding errors causes rectangle to not be updated correctly
         self.line_threshold = 20 # If height is smaller than this, we don't draw the line
@@ -147,6 +158,13 @@ class PlayerVisualizer:
             pygame.draw.aaline(self.screen, self.separator_color, 
                 (self.left+(self.right-self.left)*self.secondary_ratio, self.bottom-self.epsilon), 
                 (self.left+(self.right-self.left)*self.secondary_ratio, self.top+self.epsilon))
+
+        self.font.render_to(self.screen, (self.secondary_rect.x+5, 
+                                        self.secondary_rect.y+self.secondary_rect.height//4), 
+                            self.id, (255, 255, 255), size=1.5*self.primary_rect.height//2)
+        self.font.render_to(self.screen, (self.primary_rect.x+5, 
+                                        self.primary_rect.y+self.primary_rect.height//4), 
+                            self.name, (255, 255, 255), size=1.5*self.primary_rect.height//2)
 
         return [self.primary_rect, self.secondary_rect, self.previous_primary_rect, self.previous_secondary_rect]
 
@@ -174,6 +192,7 @@ class PlayerVisualizer:
         self.right = left+width
         self.top = top
         self.bottom = top+height
+
 
 start = TournamentVisualizer()
 start.on_execute()
