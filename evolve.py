@@ -19,8 +19,15 @@ stats_location = 'stats'
 genome_locations = 'checkpoints'
 current_gen = 0
 
-def eval_genome(zombie, previous_winner_fitness):
-    return max(0, zombie.get_tournament_position() - previous_winner_fitness)
+def eval_genome(zombie, previous_winner):
+    if previous_winner is None:
+        previous_winner_fitness = 0
+    else:
+        previous_winner_fitness = previous_winner.get_tournament_position()
+    fitness = max(0, zombie.get_tournament_position() - previous_winner_fitness)
+    if previous_winner is not None and zombie.name == previous_winner.name:
+        fitness = 0.5
+    return fitness
 
 def eval_genomes(genomes, config):
     previous_best_id = find_best_genome(genomes)
@@ -31,12 +38,12 @@ def eval_genomes(genomes, config):
     winners = tournament.play()
 
     if previous_best_id is None:
-        previous_winner_fitness = 0
+        previous_winner = None
     else:
-        previous_winner_fitness = find_zombie(zombies, previous_best_id).get_tournament_position()
+        previous_winner = find_zombie(zombies, previous_best_id)
     
     for zombie in zombies:
-        zombie.genome.fitness = eval_genome(zombie, previous_winner_fitness)
+        zombie.genome.fitness = eval_genome(zombie, previous_winner)
 
     checkpoint(genomes)
     return winners
