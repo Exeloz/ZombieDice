@@ -112,6 +112,20 @@ class TournamentVisualizer:
             self.render()
         self.on_cleanup()
     
+class BracketVisualizer:
+    def __init__(self, origin_x, origin_y, player_ids, player_names) -> None:
+        assert(len(player_ids) == len(player_names))
+        self.ids = player_ids
+        self.names = player_names
+        self.n_players = len(self.ids)
+
+        # Dimension and position
+        self.x = origin_x
+        self.y = origin_y
+        self.player_width = 200
+        self.player_height = 45
+        self.player_pri_sec_ratio = 8
+
 class PlayerVisualizer:
     def __init__(self, screen, origin_x, origin_y, id, name, font) -> None:
         self.screen = screen
