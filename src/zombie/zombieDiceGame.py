@@ -149,14 +149,7 @@ class ZombieDiceGame(Game):
             self.game_active = self.validate_game()
         winners = [player for player in self.players if player.get_brains() == max([p.get_brains() for p in self.players])]
         losers = [player for player in self.players if player.get_brains() != max([p.get_brains() for p in self.players])]
-        for winner in winners:
-            if len(winners) >= 2:
-                winner.register_draw()
-            else:
-                winner.register_win()
-        for loser in losers:
-            loser.register_loss()
-        return winners
+        return winners, losers
 
     def validate_game(self):
         game_validated = self.number_turns < self.limit_turns

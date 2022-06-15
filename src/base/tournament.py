@@ -2,7 +2,7 @@ import math
 from enum import IntEnum
 from random import choice, shuffle
 
-from nbformat import current_nbformat
+import ray
 
 from src.base.game import Game, Turn
 from src.base.player import Player, RandomPlayer
@@ -27,20 +27,28 @@ class Bracket:
         self.history = []
         self.break_tie_calls = 0
 
-    def play(self):
-        self.game = self.gameClass(self.players)
-        for _ in range(self.number_games):
-            winners = self.play_single_game(self.game)
-            self.__register_game__(winners)
+    def play(self, n_games=None):
+        number_games = self.number_games if n_games is None else n_games
+        jobs = [self.play_single_game.remote(self, self.gameClass(self.players)) for _ in range(number_games)]
+
+        results = ray.get(jobs)
+        for winners_uuid, losers_uuid in results:
+            winners = [Player.find_player(uuid, self.players) for uuid in winners_uuid]
+            losers = [Player.find_player(uuid, self.players) for uuid in losers_uuid]
+            self.__register_game__(winners, losers)
             self.shuffle_players()
         return self.get_winners()
 
+    @ray.remote
     def play_single_game(self, game):
         for player in self.players:
             player.reset()
-        winners = game.play()
+        winners, losers = game.play()
         game.reset()
-        return winners
+
+        winners_uuid = [winner.uuid for winner in winners]
+        losers_uuid = [loser.uuid for loser in losers]
+        return (winners_uuid, losers_uuid)
 
     def break_tie(self, players):
         self.break_tie_calls += 1
@@ -66,9 +74,7 @@ class Bracket:
         return winners
 
     def __tiebreaker_keep_playing__(self):
-        winners = self.play_single_game(self.game)
-        self.__register_game__(winners)
-        self.shuffle_players()
+        winners = self.play(n_games=1)
         return self.get_winners()
 
     def __tiebreaker_check_draws__(self, players):
@@ -85,8 +91,15 @@ class Bracket:
     def __tiebreaker_random__(self, players):
         return [choice(players)]
 
-    def __register_game__(self, winners):
+    def __register_game__(self, winners, losers):
         self.history.append(tuple([str(winner) for winner in winners]))
+        for winner in winners:
+            if len(winners) > 1:
+                winner.register_draw()
+            else:
+                winner.register_win()
+        for loser in losers:
+            loser.register_loss()
 
 class Tournament:
     def __init__(self, players, size_bracket, number_games, gameClass=Game, 
@@ -105,7 +118,7 @@ class Tournament:
         #Tournament related
         self.contestants = []
 
-    def preleminary_selection(self, number_prep_games=100):
+    def preleminary_selection(self, number_prep_games=10):
         number_contestants = int(math.pow(self.size_bracket, 
             math.floor(math.log(len(self.players), self.size_bracket))))
         results = []
@@ -123,11 +136,15 @@ class Tournament:
     def play(self):
         assert(len(self.contestants)%self.size_bracket==0)
         shuffle(self.contestants)
+
         while(len(self.contestants) > 1):
             current_winners = []
             for contestant in self.contestants:
                 contestant.reset_wins()
                 contestant.increment_tournament_position()
+
+            jobs = []
+
             for index, player in enumerate(self.contestants):
                 if (index+1)%self.size_bracket==0:
                     players = self.contestants[index-self.size_bracket+1:index+1]
@@ -135,10 +152,10 @@ class Tournament:
                     winners = bracket.play()
                     assert(len(winners) == 1)
                     current_winners.append(winners[0])
+
             self.contestants = current_winners
         self.contestants[0].increment_tournament_position()
         return self.contestants
-
 
 if __name__ == "__main__":
     number_games = 100

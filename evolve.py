@@ -1,6 +1,8 @@
 import math
 import multiprocessing
 import os
+
+import ray
 import pickle
 from pathlib import Path
 
@@ -13,7 +15,7 @@ from src.zombie.zombieDiceGame import ZombieDiceGame
 from src.zombie.zombieDicePlayers import (GreedyZombie, RandomZombie,
                                           StudentZombie)
 
-number_games = 1000
+number_games = 10
 number_gens = 100
 stats_location = 'stats'
 genome_locations = 'checkpoints'
@@ -33,7 +35,8 @@ def eval_genomes(genomes, config):
     previous_best_id = find_best_genome(genomes)
     zombies = [StudentZombie(create_zombie_name(genome_id), genome, config) 
                     for genome_id, genome in genomes]
-    tournament = Tournament(zombies, 4, number_games, ZombieDiceGame, RandomZombie)
+    tournament = Tournament(zombies, 4, number_games, 
+        gameClass=ZombieDiceGame, randomPlayerClass=RandomZombie)
     tournament.preleminary_selection()
     winners = tournament.play()
 
@@ -116,4 +119,6 @@ def run():
                        filename=f"{stats_location}/winner-feedforward-enabled-pruned.gv", prune_unused=True)
 
 if __name__ == '__main__':
+    ray.init(num_cpus=4)
     run()
+    ray.shutdow()

@@ -1,15 +1,18 @@
 import random
-
+import uuid
 
 class Player:
     def __init__(self, name, decision_function = None):
         self.decision_function = decision_function
-        self.name = name
         self.wins = 0
         self.losses = 0
         self.draws = 0
 
         self.tournament_position = 0
+
+        # Info related
+        self.name = name
+        self.uuid = uuid.uuid4()
 
     def play(self, inputs):
         return self.decision_function(inputs)
@@ -54,6 +57,12 @@ class Player:
         self.wins = 0
         self.losses = 0
         self.draws = 0
+
+    @staticmethod
+    def find_player(uuid, players):
+        for player in players:
+            if player.uuid == uuid:
+                return player
 
     def __str__(self) -> str:
         return str(self.name)
