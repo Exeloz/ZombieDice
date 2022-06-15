@@ -1,7 +1,7 @@
 import math
 import multiprocessing
 import os
-
+import sys
 import ray
 import pickle
 from pathlib import Path
@@ -119,6 +119,10 @@ def run():
                        filename=f"{stats_location}/winner-feedforward-enabled-pruned.gv", prune_unused=True)
 
 if __name__ == '__main__':
-    ray.init(num_cpus=4)
+    if len(sys.argv) > 1:
+        num_cpus = int(sys.argv[1])
+    else:
+        num_cpus = 4
+    ray.init(num_cpus=num_cpus)
     run()
     ray.shutdow()
