@@ -15,7 +15,7 @@ from src.zombie.zombieDiceGame import ZombieDiceGame
 from src.zombie.zombieDicePlayers import (GreedyZombie, RandomZombie,
                                           StudentZombie)
 
-number_games = 10
+number_games = 500
 number_gens = 100
 stats_location = 'stats'
 genome_locations = 'checkpoints'
