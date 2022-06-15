@@ -1,12 +1,11 @@
 import math
-import multiprocessing
 import os
-import sys
-import ray
 import pickle
+import sys
 from pathlib import Path
 
 import numpy as np
+import ray
 
 import neat
 import src.neat.visualize as visualize

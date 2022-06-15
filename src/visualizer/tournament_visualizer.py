@@ -1,8 +1,10 @@
-from numpy import number
+import math
+
 import pygame
 import pygame.freetype
+from numpy import number
 from pygame.locals import *
-import math
+
 
 class Grid:
     def __init__(self, screen, size, number_cells) -> None:
