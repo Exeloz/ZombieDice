@@ -140,7 +140,10 @@ class ZombieDiceGame(Game):
             turn = ZombieDiceTurn(active_player, **self.turn_arguments)
             reroll = True
             while reroll:
-                inputs = turn.get_stale_state()
+                dice_inputs = turn.get_stale_state()
+                players_inputs = [player.get_brains() for player in self.players]
+                self_inputs = [index]
+                inputs = dice_inputs + players_inputs + self_inputs
                 reroll = active_player.play(inputs)
                 if reroll:
                     turn.play()

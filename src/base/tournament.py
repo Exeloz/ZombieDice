@@ -118,7 +118,7 @@ class Tournament:
         #Tournament related
         self.contestants = []
 
-    def preleminary_selection(self, number_prep_games=10):
+    def preleminary_selection(self, number_prep_games=100):
         number_contestants = int(math.pow(self.size_bracket, 
             math.floor(math.log(len(self.players), self.size_bracket))))
         results = []
@@ -130,7 +130,7 @@ class Tournament:
         results.sort(key=lambda d : -d[1])
         results = results[:number_contestants]
         self.contestants = [self.players[index] for index, _ in results]
-        print([(p,p.get_wins()) for p in self.contestants])
+        print(f"{len(self.contestants)}:{[(p,p.get_wins()) for p in self.contestants]}")
         return self.contestants
 
     def play(self):
