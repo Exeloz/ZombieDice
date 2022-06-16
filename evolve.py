@@ -24,7 +24,7 @@ class ZombieEvolver:
         
         # Parameters related
         self.number_games = 500
-        self.number_gens = 100
+        self.number_gens = 1000
         self.n_against = n_against
 
         # Stat related
