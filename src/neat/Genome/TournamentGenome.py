@@ -6,6 +6,12 @@ class TournamentGenome(PrunedGenome):
         super().__init__(key)
         self.last_time_winner = None
 
+    @staticmethod
+    def from_child_class(genome):
+        new_genome = TournamentGenome(genome.key)
+        new_genome.__dict__.update(genome.__dict__)
+        return new_genome
+
     def get_last_time_winner(self):
         return self.last_time_winner
 
