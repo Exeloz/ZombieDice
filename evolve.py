@@ -10,21 +10,22 @@ import ray
 import neat
 import src.neat.visualize as visualize
 from src.base.tournament import Tournament
+from src.neat.Genome.TournamentGenome import TournamentGenome
+from src.neat.Reproduction.TournamentReproduction import TournamentReproduction
+from src.neat.Stagnation.TournamentStagnation import TournamentStagnation
 from src.zombie.zombieDiceGame import ZombieDiceGame
 from src.zombie.zombieDicePlayers import (GreedyZombie, RandomZombie,
                                           StudentZombie)
 
-from src.neat.Stagnation.TournamentStagnation import TournamentStagnation
-from src.neat.Genome.PrunedGenome import PrunedGenome
 
 class ZombieEvolver:
-    def __init__(self, config_filename, n_against = 4, n_cpus = 4):
+    def __init__(self, config_filename, n_gens = 1000, n_against = 4, n_cpus = 4):
         # Config related
         self.config_filename = config_filename
         
         # Parameters related
         self.number_games = 500
-        self.number_gens = 1000
+        self.number_gens = n_gens
         self.n_against = n_against
 
         # Stat related
@@ -91,19 +92,28 @@ class ZombieEvolver:
                 pickle.dump(genome, f)
         self.current_gen += 1
 
-    def run(self):
+    def run(self, restore_from=None):
         ray.init(num_cpus=self.n_cpus)
 
         # Load the config file, which is assumed to live in
         # the same directory as this script.
         local_dir = os.path.dirname(__file__)
         config_path = os.path.join(local_dir, self.config_filename)
-        config = neat.Config(PrunedGenome, neat.DefaultReproduction,
+        config = neat.Config(TournamentGenome, TournamentReproduction,
                             neat.DefaultSpeciesSet, TournamentStagnation,
                             config_path)
 
         # Create the population, which is the top-level object for a NEAT run.
-        p = neat.Population(config)
+        if restore_from is None:
+            p = neat.Population(config)
+        else:
+            p = neat.checkpoint.Checkpointer.restore_checkpoint(restore_from)
+            stagnation = config.stagnation_type(config.stagnation_config, p.reporters)
+            p.reproduction = config.reproduction_type(config.reproduction_config,
+                                                     p.reporters,
+                                                     stagnation)
+            p.config = config
+            print("Restoring from {!s}".format(restore_from))
 
         # Add a stdout reporter to show progress in the terminal.
         p.add_reporter(neat.StdOutReporter(True))
@@ -149,7 +159,9 @@ if __name__ == '__main__':
         num_cpus = 4
     n_players = 4
     config_filename = f'configs/config-{n_players}-players'
-    evolve = ZombieEvolver(config_filename, n_players, num_cpus)
-    _ = evolve.run()
+    evolve = ZombieEvolver(config_filename, n_gens=10000, n_against=n_players, n_cpus=num_cpus)
+
+    restore_from = 'checkpoints/neat/neat-checkpoint999'
+    _ = evolve.run(restore_from)
 
     

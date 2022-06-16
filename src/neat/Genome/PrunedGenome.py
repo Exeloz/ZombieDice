@@ -1,6 +1,8 @@
 import copy
+
 import neat
 from neat.graphs import required_for_output
+
 
 class PrunedGenome(neat.DefaultGenome):
     def get_pruned_copy(self, genome_config):
