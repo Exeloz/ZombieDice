@@ -14,6 +14,9 @@ from src.zombie.zombieDiceGame import ZombieDiceGame
 from src.zombie.zombieDicePlayers import (GreedyZombie, RandomZombie,
                                           StudentZombie)
 
+from src.neat.Stagnation.TournamentStagnation import TournamentStagnation
+from src.neat.Genome.PrunedGenome import PrunedGenome
+
 class ZombieEvolver:
     def __init__(self, config_filename, n_against = 4, n_cpus = 4):
         # Config related
@@ -95,8 +98,8 @@ class ZombieEvolver:
         # the same directory as this script.
         local_dir = os.path.dirname(__file__)
         config_path = os.path.join(local_dir, self.config_filename)
-        config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
-                            neat.DefaultSpeciesSet, neat.DefaultStagnation,
+        config = neat.Config(PrunedGenome, neat.DefaultReproduction,
+                            neat.DefaultSpeciesSet, TournamentStagnation,
                             config_path)
 
         # Create the population, which is the top-level object for a NEAT run.
@@ -136,7 +139,8 @@ class ZombieEvolver:
                         filename=f"{self.stats_location}/winner-feedforward.gv")
         visualize.draw_net(config, winner, view=True, node_names=nodes_names,
                         filename=f"{self.stats_location}/winner-feedforward-enabled-pruned.gv", prune_unused=True)
-        ray.shutdow()
+        
+        ray.shutdown()
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
