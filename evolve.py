@@ -1,12 +1,13 @@
 import math
 import os
 import pickle
+import re
 import sys
 from pathlib import Path
 
 import numpy as np
 import ray
-import re
+
 import neat
 import src.neat.visualize as visualize
 from src.base.tournament import Tournament
