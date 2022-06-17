@@ -86,10 +86,11 @@ class ZombieEvolver:
     def checkpoint(self, genomes):
         directory_path = Path(f"{self.genome_locations}/gen{self.current_gen}")
         for genome_id, genome in genomes:
-            path = Path.joinpath(directory_path, str(genome_id))
-            directory_path.mkdir(parents=True, exist_ok=True)
-            with open(path, 'wb') as f:
-                pickle.dump(genome, f)
+            if genome.fitness > 0:
+                path = Path.joinpath(directory_path, str(genome_id))
+                directory_path.mkdir(parents=True, exist_ok=True)
+                with open(path, 'wb') as f:
+                    pickle.dump(genome, f)
         self.current_gen += 1
 
     def init_population(self, restore_from=None):
@@ -163,16 +164,21 @@ class ZombieEvolver:
         ray.shutdown()
 
 if __name__ == '__main__':
+    from os import listdir
+    from os.path import isfile, join
+
     if len(sys.argv) > 1:
         num_cpus = int(sys.argv[1])
     else:
         num_cpus = 4
     n_players = 4
     config_filename = f'configs/config-{n_players}-players'
-    evolve = ZombieEvolver(config_filename, n_gens=10000, n_against=n_players, n_cpus=num_cpus)
-    restore_from = 'checkpoints/neat/neat-checkpoint287'
+    evolve = ZombieEvolver(config_filename, n_gens=1000, n_against=n_players, n_cpus=num_cpus)
+    restore_point = 'checkpoints/neat/neat-checkpoint287'
     evolve.init_population()
-    evolve.add_genomes(['to_load/13510', 'to_load/19888', 'to_load/24209', 'to_load/44882'])
+
+    to_load = [f'to_load/{f}' for f in listdir('to_load/') if isfile(join('to_load/', f))]
+    evolve.add_genomes(to_load)
     _ = evolve.run()
 
     

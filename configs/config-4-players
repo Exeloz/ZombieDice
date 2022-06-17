@@ -8,7 +8,7 @@ reset_on_extinction   = False
 
 [TournamentGenome]
 num_inputs              = 18
-num_hidden              = 3
+num_hidden              = 15
 num_outputs             = 1
 initial_connection      = full_nodirect
 feed_forward            = True
@@ -20,7 +20,7 @@ node_add_prob           = 0.125
 node_delete_prob        = 0.075
 activation_default      = random
 activation_options      = abs clamped cube exp gauss hat identity inv log relu sigmoid sin softplus square tanh
-activation_mutate_rate  = 0.1
+activation_mutate_rate  = 0.05
 aggregation_default     = sum
 aggregation_options     = sum product
 aggregation_mutate_rate = 0.1
