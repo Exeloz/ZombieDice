@@ -18,24 +18,15 @@ from src.zombie.zombieDiceGame import ZombieDiceGame
 from src.zombie.zombieDicePlayers import (GreedyZombie, RandomZombie,
                                           StudentZombie)
 
-
-class ZombieEvolver:
-    def __init__(self, config_filename, n_gens = 1000, n_against = 4, n_cpus = 4):
-        # Config related
-        self.config_filename = config_filename
-        
-        # Parameters related
-        self.number_games = 500
-        self.number_gens = n_gens
+class ZombieEvaluator:
+    def __init__(self, n_against, number_prep_games, number_games, starting_gen=0, verbose=False) -> None:
+        self.number_games = number_games
+        self.number_prep_games = number_prep_games
         self.n_against = n_against
-
-        # Stat related
-        self.stats_location = 'stats'
         self.genome_locations = 'checkpoints'
-        self.current_gen = 0
 
-        # Multithread related 
-        self.n_cpus = n_cpus
+        self.gen = starting_gen
+        self.verbose = verbose
 
     def eval_genome(self, zombie, previous_winner):
         if previous_winner is None:
@@ -48,34 +39,41 @@ class ZombieEvolver:
         return fitness
 
     def eval_genomes(self, genomes, config):
-        previous_best_id = self.find_best_genome(genomes)
-        zombies = [StudentZombie(self.create_zombie_name(genome_id), genome, config) 
+        previous_best_id = ZombieEvaluator.find_best_genome(genomes)
+        zombies = [StudentZombie(ZombieEvaluator.create_zombie_name(genome_id), genome, config) 
                         for genome_id, genome in genomes]
         tournament = Tournament(zombies, self.n_against, self.number_games, 
-            gameClass=ZombieDiceGame, randomPlayerClass=RandomZombie)
-        tournament.preleminary_selection()
+            gameClass=ZombieDiceGame, randomPlayerClass=RandomZombie,
+            verbose=self.verbose)
+        tournament.preleminary_selection(self.number_prep_games)
         winners = tournament.play()
 
         if previous_best_id is None:
             previous_winner = None
         else:
-            previous_winner = self.find_zombie(zombies, previous_best_id)
+            previous_winner = ZombieEvaluator.find_zombie(zombies, previous_best_id)
         
         for zombie in zombies:
             zombie.genome.fitness = self.eval_genome(zombie, previous_winner)
 
-        self.checkpoint(genomes)
+        ZombieEvaluator.checkpoint(f"{self.genome_locations}/gen{self.gen}", genomes)
+        self.gen += 1
         return winners
 
-    def create_zombie_name(self, genome_id):
-        return f'Student-{genome_id}'
+    @staticmethod
+    def reset_fitness(genomes):
+        for genome in genomes:
+            genome.fitness = None
+        return genomes
 
-    def find_zombie(self, zombies, genome_id):
+    @staticmethod
+    def find_zombie(zombies, genome_id):
         for zombie in zombies:
-            if str(zombie) == self.create_zombie_name(genome_id):
+            if str(zombie) == ZombieEvaluator.create_zombie_name(genome_id):
                 return zombie 
 
-    def find_best_genome(self, genomes):
+    @staticmethod
+    def find_best_genome(genomes):
         genomes_light = [(g_id, g.fitness) for g_id, g in genomes if g.fitness is not None]
         if len(genomes_light) == 0:
             return None
@@ -84,24 +82,60 @@ class ZombieEvolver:
             if genome_id == max_id:
                 return genome_id
 
-    def checkpoint(self, genomes):
-        directory_path = Path(f"{self.genome_locations}/gen{self.current_gen}")
+    @staticmethod
+    def create_zombie_name(genome_id):
+        return f'Student-{genome_id}'
+
+    @staticmethod
+    def checkpoint(filename, genomes):
+        directory_path = Path(filename)
         for genome_id, genome in genomes:
             if genome.fitness > 0:
                 path = Path.joinpath(directory_path, str(genome_id))
                 directory_path.mkdir(parents=True, exist_ok=True)
                 with open(path, 'wb') as f:
                     pickle.dump(genome, f)
-        self.current_gen += 1
 
-    def init_population(self, restore_from=None):
-        # Load the config file, which is assumed to live in
-        # the same directory as this script.
+    @staticmethod
+    def load_genome(filename):
+        id = int(re.findall('[0-9]+', filename)[-1])
+        with open(filename, 'rb') as f:
+            player = pickle.load(f)
+            player = TournamentGenome.from_child_class(player)
+            print(f'Loaded genome:{id}')
+        return id, player
+
+class ZombieEvolver:
+    def __init__(self, config_filename, n_gens = 1000, n_against = 4, n_cpus = 4):
+        # Config related
+        self.config_filename = config_filename
+        
+        # Parameters related
+        self.number_games = 500
+        self.number_gens = n_gens
+        self.n_against = n_against
+
+        # Stat related
+        self.genome_locations = 'checkpoints'
+        self.stats_location = 'stats'
+        self.current_gen = 0
+
+        # Multithread related 
+        self.n_cpus = n_cpus
+
+        # Evaluation related
+        self.evaluator = ZombieEvaluator(self.n_against, 100, self.number_games)
+
+    def load_config(config_filename):
         local_dir = os.path.dirname(__file__)
-        config_path = os.path.join(local_dir, self.config_filename)
-        self.config = neat.Config(TournamentGenome, TournamentReproduction,
+        config_path = os.path.join(local_dir, config_filename)
+        config = neat.Config(TournamentGenome, TournamentReproduction,
                             neat.DefaultSpeciesSet, TournamentStagnation,
                             config_path)
+        return config
+
+    def init_population(self, restore_from=None):
+        self.config = ZombieEvolver.load_config(self.config_filename)
 
         # Create the population, which is the top-level object for a NEAT run.
         if restore_from is None:
@@ -122,11 +156,7 @@ class ZombieEvolver:
         self.population.add_reporter(neat.Checkpointer(1, filename_prefix=Path(f"{self.genome_locations}/neat/neat-checkpoint")))
 
     def add_genome(self, genome_save):
-        id = int(re.findall('[0-9]+', genome_save)[-1])
-        with open(genome_save, 'rb') as f:
-            player = pickle.load(f)
-            player = TournamentGenome.from_child_class(player)
-            print(f'Loaded genome:{id}')
+        id, player = ZombieEvaluator.load_genome(genome_save)
         self.population.population[id] = player
         self.population.species.speciate(self.config, self.population.population, self.population.generation)
 
@@ -134,10 +164,12 @@ class ZombieEvolver:
         for genome_save in genomes_saves:
             self.add_genome(genome_save)
 
+
+
     def run(self):
         ray.init(num_cpus=self.n_cpus)
 
-        winner = self.population.run(self.eval_genomes, self.number_gens)
+        winner = self.population.run( self.evaluator.eval_genomes, self.number_gens)
         with open(f"{self.stats_location}/winner-feedforward", 'wb') as f:
             pickle.dump(winner, f)
         print(winner)
@@ -179,7 +211,7 @@ if __name__ == '__main__':
     evolve.init_population()
 
     to_load = [f'to_load/{f}' for f in listdir('to_load/') if isfile(join('to_load/', f))]
-    evolve.add_genomes(to_load)
+    #evolve.add_genomes(to_load)
     _ = evolve.run()
 
     

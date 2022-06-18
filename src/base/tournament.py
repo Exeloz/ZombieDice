@@ -1,7 +1,7 @@
 import math
 from enum import IntEnum
 from random import choice, shuffle
-
+import pprint
 import ray
 
 from src.base.game import Game, Turn
@@ -103,7 +103,7 @@ class Bracket:
 
 class Tournament:
     def __init__(self, players, size_bracket, number_games, gameClass=Game, 
-        randomPlayerClass=RandomPlayer, tiebreaker='keep_playing') -> None:
+        randomPlayerClass=RandomPlayer, tiebreaker='keep_playing', verbose=False) -> None:
 
         #Players related
         self.players = players
@@ -117,6 +117,11 @@ class Tournament:
 
         #Tournament related
         self.contestants = []
+        self.history = {}
+
+        #Log related
+        self.verbose = verbose
+        self.pp = pprint.PrettyPrinter(width=41, compact=True)
 
     def preleminary_selection(self, number_prep_games=100):
         number_contestants = int(math.pow(self.size_bracket, 
@@ -126,18 +131,24 @@ class Tournament:
             players = [player] + [self.randomPlayerClass(f'random{i}') for i in range(self.size_bracket-1)]
             bracket = Bracket(players, number_prep_games, self.gameClass)
             bracket.play()
+            self.write_history(players)
             results.append((index, player.get_wins()))
         results.sort(key=lambda d : -d[1])
         results = results[:number_contestants]
         self.contestants = [self.players[index] for index, _ in results]
+        if self.verbose >= 2: 
+            self.pp.pprint(self.history)
         print(f"{len(self.contestants)}:{[(p,p.get_wins()) for p in self.contestants]}")
+        self.reset_history()
         return self.contestants
 
     def play(self):
         assert(len(self.contestants)%self.size_bracket==0)
         shuffle(self.contestants)
 
+        level_deep = 0
         while(len(self.contestants) > 1):
+            level_deep += 1
             current_winners = []
             for contestant in self.contestants:
                 contestant.reset_wins()
@@ -150,12 +161,28 @@ class Tournament:
                     players = self.contestants[index-self.size_bracket+1:index+1]
                     bracket = Bracket(players, self.number_games, self.gameClass)
                     winners = bracket.play()
+                    self.write_history(players, level_deep = level_deep)
                     assert(len(winners) == 1)
                     current_winners.append(winners[0])
 
             self.contestants = current_winners
         self.contestants[0].increment_tournament_position()
+        if self.verbose >= 2: 
+            self.pp.pprint(self.history)
         return self.contestants
+
+    def write_history(self, players, level_deep=None):
+        key = f"Level {level_deep}:{str([str(p) for p in players])}"
+        results = ([(str(p), 
+            f"W:{p.get_wins()}", 
+            f"D:{p.get_draws()}", 
+            f"L:{p.get_losses()}") 
+            for p in players])
+        self.history[key] = results
+        if self.verbose : self.pp.pprint((key, results))
+
+    def reset_history(self):
+        self.history = {}
 
 if __name__ == "__main__":
     number_games = 100
