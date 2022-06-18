@@ -1,54 +1,27 @@
 import os
 import pickle
-
+import sys
 import numpy as np
 from matplotlib import pyplot as plt
 
 import neat
 import src.zombie.zombieDiceGame
+from evolve import ZombieEvolver
 
-# load the winner
-player_filename = "best_player_1"
-with open(player_filename, 'rb') as f:
-    player = pickle.load(f)
-    print('Loaded genome:')
-    print(player)
+if __name__ == '__main__':
+    from os import listdir
+    from os.path import isfile, join
 
-scores = []
-for _ in range(5000000):
+    if len(sys.argv) > 1:
+        num_cpus = int(sys.argv[1])
+    else:
+        num_cpus = 4
+    n_players = 4
+    config_filename = f'configs/config-{n_players}-players'
+    evolve = ZombieEvolver(config_filename, n_gens=1000, n_against=n_players, n_cpus=num_cpus)
+    restore_point = 'checkpoints/neat/neat-checkpoint287'
+    evolve.init_population()
 
-    game = zombieDiceGame.ZombieDiceGame()
-
-    local_dir = os.path.dirname(__file__)
-    config_path = os.path.join(local_dir, 'config-feedforward')
-    config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
-                        neat.DefaultSpeciesSet, neat.DefaultStagnation,
-                        config_path)
-
-    net = neat.nn.FeedForwardNetwork.create(player, config)
-
-    reroll = True
-    fitness = 0.0
-    #print(game.get_stale_state())
-    while reroll:
-        inputs = game.get_stale_state()
-        action = net.activate(inputs)[0]
-
-        # Do we reroll?
-        reroll = bool(round(min(1, max(0, action))))
-        if reroll: 
-            game.roll()
-            #print(game.get_stale_state())
-
-        # Stop if the to many explosions occured of if all dice are used and
-        # no rerolls can be achieved
-        if game.turn_ended():
-            reroll = False
-
-        fitness = game.get_points()
-    scores.append(fitness)
-    if _%100 ==0: print(f"{_} : Score: {fitness}")
-
-scores.sort()
-plt.plot(range(len(scores)), scores)
-plt.show()
+    to_load = [f'to_load/{f}' for f in listdir('to_load/') if isfile(join('to_load/', f))]
+    evolve.add_genomes(to_load)
+    _ = evolve.run()
