@@ -2,6 +2,9 @@ import os
 import pickle
 
 import neat
+from src.neat.Genome.TournamentGenome import TournamentGenome
+from src.neat.Reproduction.TournamentReproduction import TournamentReproduction
+from src.neat.Stagnation.TournamentStagnation import TournamentStagnation
 from src.base.player import Player, RandomPlayer
 from src.zombie.zombieDiceGame import ZombieDiceType
 
@@ -25,17 +28,17 @@ class GreedyZombie(Zombie):
     '''A player that keeps on rolling until it's too dagerous, meaning there is
     exactly 2 explosions on the board'''
     def __init__(self, name, limit=2):
-        def decision_function(inputs, limit = limit):
-            n_explosions = sum([input == int(ZombieDiceType.explosion) for input in inputs])
+        def decision_function(inputs, limit = limit, inputs_are_dice=13):
+            n_explosions = sum([input == int(ZombieDiceType.explosion) for input in inputs[:inputs_are_dice]])
             return n_explosions < limit
         super().__init__(name, decision_function)
 
 class SafeZombie(Zombie):
     '''A player that rolls until it has a brain. Stops right after, even if
     there is no explosion!'''
-    def __init__(self, name, min=1):
+    def __init__(self, name, min=1, inputs_are_dice=13):
         def decision_function(inputs, min = min):
-            n_brains = sum([input == int(ZombieDiceType.brain) for input in inputs])
+            n_brains = sum([input == int(ZombieDiceType.brain) for input in inputs[:inputs_are_dice]])
             return n_brains < min
         super().__init__(name, decision_function)
 
@@ -58,9 +61,9 @@ class IntelligentZombie(Zombie):
         with open(player_path, 'rb') as f:
             player = pickle.load(f)
 
-        config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
-            neat.DefaultSpeciesSet, neat.DefaultStagnation,
-            config_path)
+        config = neat.Config(TournamentGenome, TournamentReproduction,
+                            neat.DefaultSpeciesSet, TournamentStagnation,
+                            config_path)
         self.net = neat.nn.FeedForwardNetwork.create(player, config)
 
         def decision_function(inputs):

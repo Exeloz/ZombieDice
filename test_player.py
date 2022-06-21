@@ -5,13 +5,12 @@ import ray
 import numpy as np
 from matplotlib import pyplot as plt
 
-import neat
-import src.zombie.zombieDiceGame
+from src.base.tournament import Tournament
+from src.zombie.zombieDicePlayers import *
 from evolve import ZombieEvaluator, ZombieEvolver
+from src.zombie.zombieDiceGame import ZombieDiceGame
 
 if __name__ == '__main__':
-    from os import listdir
-    from os.path import isfile, join
 
     if len(sys.argv) > 1:
         num_cpus = int(sys.argv[1])
@@ -22,10 +21,15 @@ if __name__ == '__main__':
 
     n_players = 4
     config_filename = f'configs/config-{n_players}-players'
-    evaluator = ZombieEvaluator(4, 5000, 40000, verbose=True)
 
-    to_load = [f'to_load/{f}' for f in listdir('to_load/') if isfile(join('to_load/', f))]
-    genomes = [ZombieEvaluator.load_genome(g) for g in to_load]
-    evaluator.eval_genomes(genomes, ZombieEvolver.load_config(config_filename))
+    player_path = 'stats/winner-4-player'
+    players = [GreedyZombie('Grinch'), RandomZombie('Randall'), SafeZombie('Kyle'),
+        IntelligentZombie('Jean-Claude', player_path, config_filename)]
+        
+    tournament = Tournament(players, n_players, 1000000, 
+        gameClass=ZombieDiceGame, randomPlayerClass=RandomZombie,
+        verbose=2)
+    tournament.preleminary_selection(0)
+    winners = tournament.play()
     ray.shutdown()
 

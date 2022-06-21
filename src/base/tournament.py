@@ -18,7 +18,8 @@ class TieBreaker(IntEnum):
     earliest_win = 3
 
 class Bracket:
-    def __init__(self, players, number_games, gameClass=Game, tiebreaker=TieBreaker.keep_playing):
+    def __init__(self, players, number_games, gameClass=Game, tiebreaker=TieBreaker.keep_playing,
+                    verbose=0):
         self.players = players
         self.gameClass = gameClass
         self.number_games = number_games
@@ -26,6 +27,10 @@ class Bracket:
 
         self.history = []
         self.break_tie_calls = 0
+
+        #Log related
+        self.verbose = verbose
+        self.pp = pprint.PrettyPrinter(width=41, compact=True)
 
     def play(self, n_games=None):
         number_games = self.number_games if n_games is None else n_games
@@ -44,6 +49,7 @@ class Bracket:
         for player in self.players:
             player.reset()
         winners, losers = game.play()
+        if self.verbose >= 2: self.pp.pprint(f"Winner : {winners}")
         game.reset()
 
         winners_uuid = [winner.uuid for winner in winners]
@@ -92,7 +98,8 @@ class Bracket:
         return [choice(players)]
 
     def __register_game__(self, winners, losers):
-        self.history.append(tuple([str(winner) for winner in winners]))
+        game_state = tuple([str(winner) for winner in winners])
+        self.history.append(game_state)
         for winner in winners:
             if len(winners) > 1:
                 winner.register_draw()
@@ -129,7 +136,7 @@ class Tournament:
         results = []
         for index, player in enumerate(self.players):
             players = [player] + [self.randomPlayerClass(f'random{i}') for i in range(self.size_bracket-1)]
-            bracket = Bracket(players, number_prep_games, self.gameClass)
+            bracket = Bracket(players, number_prep_games, self.gameClass, verbose=self.verbose)
             bracket.play()
             self.write_history(players)
             results.append((index, player.get_wins()))
