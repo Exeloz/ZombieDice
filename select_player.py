@@ -25,7 +25,7 @@ if __name__ == '__main__':
     evaluator = ZombieEvaluator(n_players, 5000, 40000, verbose=True)
 
     to_load = [f'to_load/{f}' for f in listdir('to_load/') if isfile(join('to_load/', f))]
-    genomes = [ZombieEvaluator.load_genome(g) for g in to_load]
+    genomes = [ZombieEvaluator.load_genome(g, id+1) for id, g in enumerate(to_load)]
     evaluator.eval_genomes(genomes, ZombieEvolver.load_config(config_filename))
     ray.shutdown()
 

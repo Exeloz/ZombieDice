@@ -97,8 +97,9 @@ class ZombieEvaluator:
                     pickle.dump(genome, f)
 
     @staticmethod
-    def load_genome(filename):
-        id = int(re.findall('[0-9]+', filename)[-1])
+    def load_genome(filename, id=None):
+        if id is None:
+            id = int(re.findall('[0-9]+', filename)[-1])
         with open(filename, 'rb') as f:
             player = pickle.load(f)
             player = TournamentGenome.from_child_class(player)
