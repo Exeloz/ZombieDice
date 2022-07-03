@@ -10,7 +10,7 @@ import ray
 
 import neat
 import src.neat.visualize as visualize
-from src.base.tournament import Tournament
+from src.base.tournament import Tournament, Bracket
 from src.neat.Genome.TournamentGenome import TournamentGenome
 from src.neat.Reproduction.TournamentReproduction import TournamentReproduction
 from src.neat.Stagnation.TournamentStagnation import TournamentStagnation
@@ -28,17 +28,24 @@ class ZombieEvaluator:
         self.gen = starting_gen
         self.verbose = verbose
 
-    def eval_genome(self, zombie, previous_winner):
-        if previous_winner is None:
-            previous_winner_fitness = 0
-        else:
-            previous_winner_fitness = previous_winner.get_tournament_position()
-        fitness = max(0, zombie.get_tournament_position() - previous_winner_fitness)
-        if previous_winner is not None and zombie.name == previous_winner.name:
-            fitness = 0.5
-        return fitness
+    def eval_genomes_greedy(self, genomes, config):
+        previous_best_id = ZombieEvaluator.find_best_genome(genomes)
+        zombies = [StudentZombie(ZombieEvaluator.create_zombie_name(genome_id), genome, config) 
+                    for genome_id, genome in genomes]
+        for zombie in zombies:
+            players = [zombie] + [GreedyZombie(i) for i in range(3)]
+            tournament = Tournament(players, self.n_against, self.number_games, 
+                gameClass=ZombieDiceGame, randomPlayerClass=RandomZombie,
+                verbose=self.verbose)
+            tournament.preleminary_selection(0)
+            winners = tournament.play()
+            zombie.genome.fitness = zombie.get_wins()
 
-    def eval_genomes(self, genomes, config):
+        ZombieEvaluator.checkpoint(f"{self.genome_locations}/gen{self.gen}", genomes)
+        self.gen += 1
+        return winners
+
+    def eval_genomes_tournament(self, genomes, config):
         previous_best_id = ZombieEvaluator.find_best_genome(genomes)
         zombies = [StudentZombie(ZombieEvaluator.create_zombie_name(genome_id), genome, config) 
                         for genome_id, genome in genomes]
@@ -54,11 +61,21 @@ class ZombieEvaluator:
             previous_winner = ZombieEvaluator.find_zombie(zombies, previous_best_id)
         
         for zombie in zombies:
-            zombie.genome.fitness = self.eval_genome(zombie, previous_winner)
+            zombie.genome.fitness = self.eval_genome_tournament(zombie, previous_winner)
 
         ZombieEvaluator.checkpoint(f"{self.genome_locations}/gen{self.gen}", genomes)
         self.gen += 1
         return winners
+
+    def eval_genome_tournament(self, zombie, previous_winner):
+        if previous_winner is None:
+            previous_winner_fitness = 0
+        else:
+            previous_winner_fitness = previous_winner.get_tournament_position()
+        fitness = max(0, zombie.get_tournament_position() - previous_winner_fitness)
+        if previous_winner is not None and zombie.name == previous_winner.name:
+            fitness = 0.5
+        return fitness
 
     @staticmethod
     def reset_fitness(genomes):
@@ -107,12 +124,13 @@ class ZombieEvaluator:
         return id, player
 
 class ZombieEvolver:
-    def __init__(self, config_filename, n_gens = 1000, n_against = 4, n_cpus = 4):
+    def __init__(self, config_filename, n_gens = 1000, n_against = 4, n_cpus = 4,
+                    n_games = 500):
         # Config related
         self.config_filename = config_filename
         
         # Parameters related
-        self.number_games = 500
+        self.number_games = n_games
         self.number_gens = n_gens
         self.n_against = n_against
 
@@ -165,12 +183,17 @@ class ZombieEvolver:
         for genome_save in genomes_saves:
             self.add_genome(genome_save)
 
-
-
-    def run(self):
+    def run(self, option_run='tournament'):
         ray.init(num_cpus=self.n_cpus)
 
-        winner = self.population.run( self.evaluator.eval_genomes, self.number_gens)
+        if option_run == 'tournament':
+            eval_func = self.evaluator.eval_genomes_tournament
+        elif option_run == 'greedy':
+            eval_func = self.evaluator.eval_genomes_greedy
+        else:
+            eval_func = None
+
+        winner = self.population.run(eval_func, self.number_gens)
         with open(f"{self.stats_location}/winner-feedforward", 'wb') as f:
             pickle.dump(winner, f)
         print(winner)
@@ -207,12 +230,13 @@ if __name__ == '__main__':
         num_cpus = 4
     n_players = 4
     config_filename = f'configs/config-{n_players}-players'
-    evolve = ZombieEvolver(config_filename, n_gens=1000, n_against=n_players, n_cpus=num_cpus)
+    evolve = ZombieEvolver(config_filename, n_gens=1000, n_against=n_players, n_cpus=num_cpus,
+                            n_games=10)
     restore_point = 'checkpoints/neat/neat-checkpoint287'
     evolve.init_population()
 
-    to_load = [f'to_load/{f}' for f in listdir('to_load/') if isfile(join('to_load/', f))]
+    #to_load = [f'to_load/{f}' for f in listdir('to_load/') if isfile(join('to_load/', f))]
     #evolve.add_genomes(to_load)
-    _ = evolve.run()
+    _ = evolve.run(option_run='greedy')
 
     

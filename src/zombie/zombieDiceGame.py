@@ -121,8 +121,8 @@ class ZombieDiceTurn(Turn):
 
 class ZombieDiceGame(Game):
     def __init__(self, players, number_dice_easy=6, number_dice_moderate=4, 
-        number_dice_hard=3, limit_explosions=3, limit_brains=13):
-        super().__init__(players)
+        number_dice_hard=3, limit_explosions=3, limit_brains=13, verbose=0, log=''):
+        super().__init__(players, verbose)
         self.turn_arguments = {"number_dice_easy":number_dice_easy,
             "number_dice_moderate":number_dice_moderate,
             "number_dice_hard":number_dice_hard,
@@ -130,25 +130,34 @@ class ZombieDiceGame(Game):
         self.limit_brains = limit_brains
         self.limit_turns = 25
 
+        self.log = log
+
     def play(self):
         index = 0
+        self._verbose('New game', 3)
         while self.game_active:
             if index % len(self.players) == 0:
                 self.number_turns += 1
             active_player = self.players[index]
             index = (index + 1) % len(self.players)
+            self._verbose(f'current player : {active_player}. Position : {index}', 3)
             turn = ZombieDiceTurn(active_player, **self.turn_arguments)
             reroll = True
             while reroll:
                 dice_inputs = turn.get_stale_state()
+                self._verbose(f'Dice : {dice_inputs}', 3)
                 players_inputs = [player.get_brains() for player in self.players]
+                self._verbose(f'Scores : {players_inputs}', 3)
                 self_inputs = [index]
                 inputs = dice_inputs + players_inputs + self_inputs
                 reroll = active_player.play(inputs)
+                self._verbose(f'Reroll? : {reroll}', 3)
                 if reroll:
                     turn.play()
                 if turn.turn_ended():
                     reroll = False
+            self._verbose(f'Final dice : {turn.get_stale_state()}', 3)
+            self._verbose(f'Scores : {[player.get_brains() for player in self.players]}', 3)
             active_player.give_brains(turn.get_points())
             self.game_active = self.validate_game()
         winners = [player for player in self.players if player.get_brains() == max([p.get_brains() for p in self.players])]
@@ -169,6 +178,11 @@ class ZombieDiceGame(Game):
 
     def reset(self):
         super().reset()
+
+    def _verbose(self, message, level, endl='\n'):
+        if self.verbose >= level:
+            with open(self.log, 'a+') as log:
+                log.write(message+endl)
 
 def progress_bar(current, total, bar_length=40):
     fraction = current / total

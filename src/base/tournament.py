@@ -34,7 +34,9 @@ class Bracket:
 
     def play(self, n_games=None):
         number_games = self.number_games if n_games is None else n_games
-        jobs = [self.play_single_game.remote(self, self.gameClass(self.players)) for _ in range(number_games)]
+        log_name = f"logs/{'-'.join([str(p) for p in self.players])}-game-"
+        jobs = [self.play_single_game.remote(
+            self, self.gameClass(self.players, verbose=self.verbose, log=f'{log_name}{i+1}.log')) for i in range(number_games)]
 
         results = ray.get(jobs)
         for winners_uuid, losers_uuid in results:
@@ -136,7 +138,7 @@ class Tournament:
         results = []
         for index, player in enumerate(self.players):
             players = [player] + [self.randomPlayerClass(f'random{i}') for i in range(self.size_bracket-1)]
-            bracket = Bracket(players, number_prep_games, self.gameClass, verbose=self.verbose)
+            bracket = Bracket(players, number_prep_games, self.gameClass, verbose=0)
             bracket.play()
             self.write_history(players)
             results.append((index, player.get_wins()))
@@ -161,12 +163,10 @@ class Tournament:
                 contestant.reset_wins()
                 contestant.increment_tournament_position()
 
-            jobs = []
-
             for index, player in enumerate(self.contestants):
                 if (index+1)%self.size_bracket==0:
                     players = self.contestants[index-self.size_bracket+1:index+1]
-                    bracket = Bracket(players, self.number_games, self.gameClass)
+                    bracket = Bracket(players, self.number_games, self.gameClass, verbose=self.verbose)
                     winners = bracket.play()
                     self.write_history(players, level_deep = level_deep)
                     assert(len(winners) == 1)

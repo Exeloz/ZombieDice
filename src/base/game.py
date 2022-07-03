@@ -31,13 +31,16 @@ class Turn(object):
 
 
 class Game(object):
-    def __init__(self, players):
+    def __init__(self, players, verbose):
         self.players = players
 
         #Relative to current game
         self.game_active = True
         self.number_turns = 0
         self.countdown = None
+
+        #Verbose
+        self.verbose = verbose
 
     def play(self):
         """

@@ -22,14 +22,14 @@ if __name__ == '__main__':
     n_players = 4
     config_filename = f'configs/config-{n_players}-players'
 
-    player_path = 'stats/winner-4-player'
-    players = [GreedyZombie('Grinch'), RandomZombie('Randall'), SafeZombie('Kyle'),
-        IntelligentZombie('Jean-Claude', player_path, config_filename)]
-        
-    tournament = Tournament(players, n_players, 1000000, 
+    players_path = ['stats/winner', 'stats/finalist-1', 'stats/finalist-3', 'stats/finalist-3']
+    players = [IntelligentZombie(f'Jean-Claude-{i+1}', path, config_filename) for i, path in enumerate(players_path)]
+    players += [GreedyZombie('Greedy')]    
+    
+    tournament = Tournament(players, n_players, 500, 
         gameClass=ZombieDiceGame, randomPlayerClass=RandomZombie,
-        verbose=2)
-    tournament.preleminary_selection(0)
+        verbose=3)
+    tournament.preleminary_selection(100)
     winners = tournament.play()
     ray.shutdown()
 
