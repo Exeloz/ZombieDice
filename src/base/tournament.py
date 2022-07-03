@@ -2,6 +2,7 @@ import math
 from enum import IntEnum
 from random import choice, shuffle
 import pprint
+from numpy import number
 import ray
 
 from src.base.game import Game, Turn
@@ -34,16 +35,17 @@ class Bracket:
 
     def play(self, n_games=None):
         number_games = self.number_games if n_games is None else n_games
-        log_name = f"logs/{'-'.join([str(p) for p in self.players])}-game-"
-        jobs = [self.play_single_game.remote(
-            self, self.gameClass(self.players, verbose=self.verbose, log=f'{log_name}{i+1}.log')) for i in range(number_games)]
+        if number_games > 0:
+            log_name = f"logs/{'-'.join([str(p) for p in self.players])}-game-"
+            jobs = [self.play_single_game.remote(
+                self, self.gameClass(self.players, verbose=self.verbose, log=f'{log_name}{i+1}.log')) for i in range(number_games)]
 
-        results = ray.get(jobs)
-        for winners_uuid, losers_uuid in results:
-            winners = [Player.find_player(uuid, self.players) for uuid in winners_uuid]
-            losers = [Player.find_player(uuid, self.players) for uuid in losers_uuid]
-            self.__register_game__(winners, losers)
-            self.shuffle_players()
+            results = ray.get(jobs)
+            for winners_uuid, losers_uuid in results:
+                winners = [Player.find_player(uuid, self.players) for uuid in winners_uuid]
+                losers = [Player.find_player(uuid, self.players) for uuid in losers_uuid]
+                self.__register_game__(winners, losers)
+                self.shuffle_players()
         return self.get_winners()
 
     @ray.remote
@@ -147,7 +149,8 @@ class Tournament:
         self.contestants = [self.players[index] for index, _ in results]
         if self.verbose >= 2: 
             self.pp.pprint(self.history)
-        print(f"{len(self.contestants)}:{[(p,p.get_wins()) for p in self.contestants]}")
+        if self.verbose >= 1: 
+            print(f"{len(self.contestants)}:{[(p,p.get_wins()) for p in self.contestants]}")
         self.reset_history()
         return self.contestants
 

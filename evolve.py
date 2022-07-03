@@ -29,15 +29,15 @@ class ZombieEvaluator:
         self.verbose = verbose
 
     def eval_genomes_greedy(self, genomes, config):
-        previous_best_id = ZombieEvaluator.find_best_genome(genomes)
         zombies = [StudentZombie(ZombieEvaluator.create_zombie_name(genome_id), genome, config) 
                     for genome_id, genome in genomes]
         for zombie in zombies:
-            players = [zombie] + [GreedyZombie(i) for i in range(3)]
+            players = [zombie] + [GreedyZombie(i) for i in range(self.n_against-1)]
             tournament = Tournament(players, self.n_against, self.number_games, 
                 gameClass=ZombieDiceGame, randomPlayerClass=RandomZombie,
-                verbose=self.verbose)
+                verbose=0)
             tournament.preleminary_selection(0)
+            tournament.verbose = self.verbose
             winners = tournament.play()
             zombie.genome.fitness = zombie.get_wins()
 
@@ -145,16 +145,23 @@ class ZombieEvolver:
         # Evaluation related
         self.evaluator = ZombieEvaluator(self.n_against, 100, self.number_games)
 
-    def load_config(config_filename):
+    def load_config(config_filename, genome=neat.DefaultGenome, 
+                                    reproduction=neat.DefaultReproduction,
+                                    species = neat.DefaultSpeciesSet,
+                                    stagnation = neat.DefaultStagnation):
         local_dir = os.path.dirname(__file__)
         config_path = os.path.join(local_dir, config_filename)
-        config = neat.Config(TournamentGenome, TournamentReproduction,
-                            neat.DefaultSpeciesSet, TournamentStagnation,
+        config = neat.Config(genome, reproduction,
+                            species, stagnation,
                             config_path)
         return config
 
     def init_population(self, restore_from=None):
-        self.config = ZombieEvolver.load_config(self.config_filename)
+        self.config = ZombieEvolver.load_config(self.config_filename,
+                                                genome=TournamentGenome,
+                                                reproduction=neat.DefaultReproduction,
+                                                species=neat.DefaultSpeciesSet,
+                                                stagnation=TournamentStagnation)
 
         # Create the population, which is the top-level object for a NEAT run.
         if restore_from is None:
@@ -229,9 +236,9 @@ if __name__ == '__main__':
     else:
         num_cpus = 4
     n_players = 4
-    config_filename = f'configs/config-{n_players}-players'
+    config_filename = f'configs/config-{n_players}-players' + '-greedy'
     evolve = ZombieEvolver(config_filename, n_gens=1000, n_against=n_players, n_cpus=num_cpus,
-                            n_games=10)
+                            n_games=1000)
     restore_point = 'checkpoints/neat/neat-checkpoint287'
     evolve.init_population()
 

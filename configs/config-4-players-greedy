@@ -2,8 +2,8 @@
 # or the experiment itself.  This is the only required section.
 [NEAT]
 fitness_criterion     = max
-fitness_threshold     = 1e38
-pop_size              = 5
+fitness_threshold     = 950
+pop_size              = 200
 reset_on_extinction   = False
 
 [TournamentGenome]
@@ -55,7 +55,6 @@ compatibility_threshold = 2.5
 [TournamentStagnation]
 max_stagnation       = 10
 
-[TournamentReproduction]
+[DefaultReproduction]
 elitism            = 1
 survival_threshold = 0.5
-winner_survival    = 10
