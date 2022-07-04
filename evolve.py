@@ -125,7 +125,7 @@ class ZombieEvaluator:
 
 class ZombieEvolver:
     def __init__(self, config_filename, n_gens = 1000, n_against = 4, n_cpus = 4,
-                    n_games = 500):
+                    n_games = 500, verbose = 0):
         # Config related
         self.config_filename = config_filename
         
@@ -142,8 +142,11 @@ class ZombieEvolver:
         # Multithread related 
         self.n_cpus = n_cpus
 
+        # Verbose
+        self.verbose = verbose
+
         # Evaluation related
-        self.evaluator = ZombieEvaluator(self.n_against, 100, self.number_games)
+        self.evaluator = ZombieEvaluator(self.n_against, 100, self.number_games, verbose=self.verbose)
 
     def load_config(config_filename, genome=neat.DefaultGenome, 
                                     reproduction=neat.DefaultReproduction,
@@ -238,7 +241,7 @@ if __name__ == '__main__':
     n_players = 4
     config_filename = f'configs/config-{n_players}-players' + '-greedy'
     evolve = ZombieEvolver(config_filename, n_gens=1000, n_against=n_players, n_cpus=num_cpus,
-                            n_games=1000)
+                            n_games=1000, verbose=2)
     restore_point = 'checkpoints/neat/neat-checkpoint287'
     evolve.init_population()
 

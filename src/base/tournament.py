@@ -53,7 +53,7 @@ class Bracket:
         for player in self.players:
             player.reset()
         winners, losers = game.play()
-        if self.verbose >= 2: self.pp.pprint(f"Winner : {winners}")
+        if self.verbose >= 4: self.pp.pprint(f"Winner : {winners}")
         game.reset()
 
         winners_uuid = [winner.uuid for winner in winners]
